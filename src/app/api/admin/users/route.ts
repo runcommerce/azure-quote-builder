@@ -4,39 +4,51 @@ import { getAllUsers, deleteUser, updateUserRole } from "@/lib/db";
 
 async function requireAdmin() {
   const session = await auth();
-  const role = (session?.user as { role?: string } | undefined)?.role;
-  if (!session || role !== "admin") throw new Error("Unauthorized");
-  return session;
+  if (!session?.user) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
+  if (session.user.role !== "admin") return NextResponse.json({ error: "Forbidden — admin only" }, { status: 403 });
+  return null;
 }
 
 export async function GET() {
+  const deny = await requireAdmin();
+  if (deny) return deny;
   try {
-    await requireAdmin();
     const users = await getAllUsers();
     return NextResponse.json({ users });
-  } catch {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-}
-
-export async function DELETE(req: NextRequest) {
-  try {
-    await requireAdmin();
-    const { id } = await req.json();
-    await deleteUser(id);
-    return NextResponse.json({ success: true });
-  } catch {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json({ error: "Failed to fetch users" }, { status: 500 });
   }
 }
 
 export async function PATCH(req: NextRequest) {
+  const deny = await requireAdmin();
+  if (deny) return deny;
   try {
-    await requireAdmin();
     const { id, role } = await req.json();
+    if (!id || !["user", "admin"].includes(role))
+      return NextResponse.json({ error: "Invalid request" }, { status: 400 });
     await updateUserRole(id, role);
     return NextResponse.json({ success: true });
-  } catch {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json({ error: "Failed to update role" }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  const deny = await requireAdmin();
+  if (deny) return deny;
+  try {
+    const { id } = await req.json();
+    if (!id) return NextResponse.json({ error: "User ID required" }, { status: 400 });
+    const session = await auth();
+    if (session?.user?.id === id)
+      return NextResponse.json({ error: "You cannot delete your own account" }, { status: 400 });
+    await deleteUser(id);
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json({ error: "Failed to delete user" }, { status: 500 });
   }
 }
