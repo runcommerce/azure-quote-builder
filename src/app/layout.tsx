@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { SessionProvider } from "next-auth/react";
+import ClientProviders from "@/components/ClientProviders";
 
 export const metadata: Metadata = {
   title: "Azure Quote Builder",
@@ -16,7 +16,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet" />
       </head>
       <body style={{ fontFamily: "Roboto, sans-serif" }}>
-        <SessionProvider>{children}</SessionProvider>
+        <ClientProviders>{children}</ClientProviders>
       </body>
     </html>
   );
