@@ -163,7 +163,7 @@ export default function AdminPage() {
       <div style={{ background: B.navy, padding: "0 24px" }}>
         <div style={{ maxWidth: 960, margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", height: 58 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <img src="/azure-logo.png" alt="Azure" style={{ height: 32, width: 32, borderRadius: 5, objectFit: "cover" }} />
+            <img src="/azure-logo.png" alt="Azure Communications" style={{ height: 28, width: "auto" }} />
             <div style={{ width: 1, height: 20, background: "rgba(255,255,255,0.2)" }} />
             <span style={{ color: "rgba(255,255,255,0.65)", fontSize: 13 }}>User Management</span>
           </div>

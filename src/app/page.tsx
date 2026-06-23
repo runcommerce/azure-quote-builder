@@ -303,7 +303,7 @@ export default function Home() {
       <header style={{ background: C.navy, padding: "0 28px", boxShadow: "0 2px 12px rgba(0,0,0,0.3)", position: "sticky", top: 0, zIndex: 100 }}>
         <div style={{ maxWidth: 1300, margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", height: 64 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            <img src="/azure-logo.png" alt="Azure Communications" style={{ height: 44, width: 44, borderRadius: 8, objectFit: "cover", border: "2px solid rgba(255,255,255,0.15)" }} />
+            <img src="/azure-logo.png" alt="Azure Communications" style={{ height: 32, width: "auto" }} />
             <div style={{ width: 1, height: 30, background: "rgba(255,255,255,0.15)" }} />
             <div>
               <div style={{ color: C.white, fontWeight: 700, fontSize: 16, lineHeight: 1.1 }}>azure.iq</div>
