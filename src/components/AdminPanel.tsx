@@ -26,10 +26,34 @@ const TABS = [
   { id: "materials", label: "Materials" },
   { id: "delivery", label: "Delivery" },
   { id: "followup", label: "Follow-up" },
+  { id: "users", label: "Users" },
 ];
 
 export default function AdminPanel({ admin, setAdmin, apiConfig, setApiConfig, onClose }: Props) {
   const [tab, setTab] = useState("api");
+  const [users, setUsers] = useState<Array<{id:string;name:string;email:string;role:string;created_at:string}>>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [userMsg, setUserMsg] = useState("");
+
+  const loadUsers = async () => {
+    setUsersLoading(true);
+    const res = await fetch("/api/admin/users");
+    if (res.ok) { const d = await res.json(); setUsers(d.users); }
+    setUsersLoading(false);
+  };
+
+  const deleteUser = async (id: string, name: string) => {
+    if (!confirm('Remove ' + name + '? This cannot be undone.')) return;
+    await fetch("/api/admin/users", { method: "DELETE", headers: {"Content-Type":"application/json"}, body: JSON.stringify({id}) });
+    setUserMsg(name + ' removed.');
+    loadUsers();
+  };
+
+  const toggleRole = async (id: string, currentRole: string) => {
+    const role = currentRole === "admin" ? "user" : "admin";
+    await fetch("/api/admin/users", { method: "PATCH", headers: {"Content-Type":"application/json"}, body: JSON.stringify({id, role}) });
+    loadUsers();
+  };
 
   const inputStyle: React.CSSProperties = { width: "100%", padding: "7px 10px", borderRadius: 6, boxSizing: "border-box", border: `1px solid ${B.grey}`, fontSize: 13, fontFamily: "Roboto, sans-serif", color: B.dark, background: B.white };
   const labelStyle: React.CSSProperties = { fontSize: 11, fontWeight: 600, color: B.muted, display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.05em" };
@@ -201,8 +225,64 @@ export default function AdminPanel({ admin, setAdmin, apiConfig, setApiConfig, o
               </div>
             </div>
           )}
+          {tab === "users" && (
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                <p style={{ fontSize: 13, color: B.muted, margin: 0 }}>Manage who can access the Quote Builder. Admins can access this panel.</p>
+                <button onClick={loadUsers} style={{ padding: "7px 14px", borderRadius: 7, border: `1px solid ${B.grey}`, background: B.white, fontSize: 13, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
+                  {usersLoading ? "Loading…" : "Refresh"}
+                </button>
+              </div>
+              {userMsg && <div style={{ background: B.greenLight, border: `1px solid #9FE1CB`, borderRadius: 8, padding: "10px 14px", fontSize: 13, color: B.green, marginBottom: 14 }}>{userMsg}</div>}
+              {users.length === 0 && !usersLoading && (
+                <div style={{ textAlign: "center", padding: "32px", color: B.muted, fontSize: 14 }}>
+                  <div style={{ fontSize: 32, marginBottom: 8 }}>👥</div>
+                  Click Refresh to load users
+                </div>
+              )}
+              {users.length > 0 && (
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ background: B.offWhite }}>
+                      {["Name", "Email", "Role", "Joined", "Actions"].map(h => (
+                        <th key={h} style={{ padding: "8px 10px", textAlign: "left", fontSize: 11, fontWeight: 700, color: B.muted, textTransform: "uppercase", borderBottom: `1px solid ${B.grey}` }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.map(u => (
+                      <tr key={u.id} style={{ borderBottom: `1px solid ${B.grey}` }}>
+                        <td style={{ padding: "10px 10px", fontWeight: 600 }}>{u.name}</td>
+                        <td style={{ padding: "10px 10px", color: B.muted }}>{u.email}</td>
+                        <td style={{ padding: "10px 10px" }}>
+                          <span style={{ padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700, background: u.role === "admin" ? B.azureLight : B.grey, color: u.role === "admin" ? B.azure : B.muted, textTransform: "uppercase" }}>
+                            {u.role}
+                          </span>
+                        </td>
+                        <td style={{ padding: "10px 10px", color: B.muted, fontSize: 12 }}>{new Date(u.created_at).toLocaleDateString("en-IE")}</td>
+                        <td style={{ padding: "10px 10px" }}>
+                          <div style={{ display: "flex", gap: 8 }}>
+                            <button onClick={() => toggleRole(u.id, u.role)} style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${B.azure}`, background: B.white, color: B.azure, fontSize: 12, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
+                              Make {u.role === "admin" ? "user" : "admin"}
+                            </button>
+                            <button onClick={() => deleteUser(u.id, u.name)} style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${B.red}`, background: B.white, color: B.red, fontSize: 12, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
+                              Remove
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+              <div style={{ marginTop: 20, padding: "14px 16px", background: B.azureLight, borderRadius: 8, fontSize: 13, color: B.azure }}>
+                <strong>Invite code:</strong> Share <code style={{ background: "rgba(0,126,187,0.1)", padding: "2px 6px", borderRadius: 4 }}>{process.env.NEXT_PUBLIC_INVITE_CODE || "AZURE2026"}</code> with new users so they can self-register at <strong>/signup</strong>. Change it via the <code>NEXT_PUBLIC_INVITE_CODE</code> environment variable.
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 }
+
