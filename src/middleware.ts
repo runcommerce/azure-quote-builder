@@ -1,26 +1,35 @@
-import { auth } from "@/lib/auth";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { getToken } from "next-auth/jwt";
 
-export default auth((req) => {
-  const { nextUrl } = req;
-  const session = req.auth;
-  const isLoggedIn = !!session;
+const PUBLIC = ["/login", "/signup", "/forgot-password", "/reset-password", "/api/auth"];
+const STATIC = ["/_next", "/favicon.ico", "/azure-logo.png"];
 
-  const isPublic = ["/login", "/signup", "/forgot-password", "/reset-password"]
-    .some(p => nextUrl.pathname.startsWith(p));
-  const isApiAuth  = nextUrl.pathname.startsWith("/api/auth");
-  const isAdmin    = nextUrl.pathname.startsWith("/admin") || nextUrl.pathname.startsWith("/api/admin");
+export async function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
 
-  if (isApiAuth) return NextResponse.next();
-  if (isPublic) {
-    if (isLoggedIn) return NextResponse.redirect(new URL("/", nextUrl));
+  // Always pass static assets and public auth routes
+  if (STATIC.some(p => pathname.startsWith(p))) return NextResponse.next();
+  if (PUBLIC.some(p => pathname.startsWith(p))) {
+    // Redirect already-logged-in users away from auth pages
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    if (token) return NextResponse.redirect(new URL("/", req.url));
     return NextResponse.next();
   }
-  if (!isLoggedIn) return NextResponse.redirect(new URL("/login", nextUrl));
-  if (isAdmin && session?.user?.role !== "admin")
-    return NextResponse.redirect(new URL("/", nextUrl));
+
+  // All other routes require auth
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  if (!token) return NextResponse.redirect(new URL("/login", req.url));
+
+  // Admin routes require admin role
+  if (
+    (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) &&
+    token.role !== "admin"
+  ) {
+    return NextResponse.redirect(new URL("/", req.url));
+  }
+
   return NextResponse.next();
-});
+}
 
 export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico|azure-logo.png).*)"],
