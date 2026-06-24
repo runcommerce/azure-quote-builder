@@ -115,6 +115,7 @@ export default function AdminSettingsView() {
     { id: "delivery",  icon: "🚚", label: "Delivery Rules"    },
     { id: "followup",  icon: "📤", label: "Follow-up"         },
     { id: "quotefields",icon: "⚙", label: "Quote Fields"     },
+    { id: "mailbox",     icon: "📬", label: "Email Mailbox"   },
   ];
 
   // ── Quote field definitions — editable option lists ────────────────────
@@ -435,6 +436,78 @@ export default function AdminSettingsView() {
 
           <Section title="Packaging Types" icon="📦" desc="Packaging options for delivery">
             <FieldListEditor fieldKey="packagingTypes" label="Packaging Types" />
+          </Section>
+        </div>
+      )}
+
+
+      {/* ── Mailbox Integration ──────────────────────────────────────── */}
+      {activeTab === "mailbox" && (
+        <div>
+          <Section title="Connected Mailbox" icon="📬" desc="Automatically pull incoming RFQs from quotes@azurecomm.ie into the Email Quote Parser">
+            <div style={{ marginBottom: 16, padding: "14px 16px", background: "#E8F4EE", borderRadius: 8, border: "1px solid #9FE1CB", display: "flex", gap: 10, alignItems: "flex-start" }}>
+              <span style={{ fontSize: 20 }}>✅</span>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 14, color: "#0F6E56" }}>Mailbox connected</div>
+                <div style={{ fontSize: 13, color: "#0F6E56" }}>quotes@azurecomm.ie is syncing via IMAP</div>
+              </div>
+            </div>
+            <div style={{ display: "grid", gap: 14 }}>
+              {[
+                { key: "imap_host",  label: "IMAP Host",     placeholder: "imap.azurecomm.ie",    type: "text" },
+                { key: "imap_port",  label: "IMAP Port",     placeholder: "993",                   type: "number" },
+                { key: "imap_user",  label: "Email Address", placeholder: "quotes@azurecomm.ie",   type: "email" },
+                { key: "imap_pass",  label: "Password",      placeholder: "••••••••••",            type: "password" },
+                { key: "imap_folder",label: "Folder to watch", placeholder: "INBOX",              type: "text" },
+              ].map(f => (
+                <div key={f.key} style={{ display: "grid", gridTemplateColumns: "160px 1fr", gap: 12, alignItems: "center" }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: C.muted, textTransform: "uppercase" as const, letterSpacing: "0.05em" }}>{f.label}</div>
+                  <input type={f.type} placeholder={f.placeholder}
+                    style={{ padding: "9px 12px", borderRadius: 8, border: "1px solid " + C.grey, fontSize: 14, fontFamily: "Roboto, sans-serif", color: C.dark, boxSizing: "border-box" as const }} />
+                </div>
+              ))}
+              <div style={{ display: "grid", gridTemplateColumns: "160px 1fr", gap: 12, alignItems: "center" }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: C.muted, textTransform: "uppercase" as const, letterSpacing: "0.05em" }}>Auto-parse emails</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <Toggle value={true} onChange={() => {}} />
+                  <span style={{ fontSize: 13, color: C.muted }}>Automatically extract quote fields from new emails</span>
+                </div>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "160px 1fr", gap: 12, alignItems: "center" }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: C.muted, textTransform: "uppercase" as const, letterSpacing: "0.05em" }}>Check interval</div>
+                <select style={{ padding: "9px 12px", borderRadius: 8, border: "1px solid " + C.grey, fontSize: 14, fontFamily: "Roboto, sans-serif" }}>
+                  <option>Every 5 minutes</option>
+                  <option>Every 15 minutes</option>
+                  <option>Every 30 minutes</option>
+                  <option>Manual only</option>
+                </select>
+              </div>
+            </div>
+            <div style={{ marginTop: 16, display: "flex", gap: 10 }}>
+              <button style={{ padding: "10px 20px", borderRadius: 8, border: "none", background: C.navy, color: C.white, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
+                Test connection
+              </button>
+              <button style={{ padding: "10px 20px", borderRadius: 8, border: "1px solid " + C.grey, background: C.white, color: C.dark, fontSize: 13, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
+                Save settings
+              </button>
+            </div>
+          </Section>
+
+          <Section title="Auto-reply Settings" icon="📤" desc="Send an acknowledgement when a new quote request arrives by email">
+            <div style={{ display: "grid", gap: 14 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 14px", background: C.offWhite, borderRadius: 8 }}>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: 14, color: C.dark }}>Send auto-acknowledgement</div>
+                  <div style={{ fontSize: 13, color: C.muted }}>Immediately reply confirming receipt within 8 hours</div>
+                </div>
+                <Toggle value={true} onChange={() => {}} />
+              </div>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: C.muted, textTransform: "uppercase" as const, letterSpacing: "0.05em", marginBottom: 8 }}>Acknowledgement template</div>
+                <textarea rows={6} defaultValue={"Hi {{customer_name}},\n\nThank you for your quote request. We've received your enquiry and will have a full quote back to you within 8 business hours.\n\nIf you need anything urgently, please call us on 01 531 2695.\n\nKind regards,\nLisa Reid\nAzure Communications"}
+                  style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid " + C.grey, fontSize: 14, fontFamily: "Roboto, sans-serif", resize: "vertical" as const, boxSizing: "border-box" as const }} />
+              </div>
+            </div>
           </Section>
         </div>
       )}

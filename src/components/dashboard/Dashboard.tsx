@@ -10,6 +10,7 @@ import CustomersView from "./CustomersView";
 import IntelligenceView from "./IntelligenceView";
 import AdminSettingsView from "./AdminSettingsView";
 import ClientPortalsView from "./ClientPortalsView";
+import EmailQuoteView from "./EmailQuoteView";
 
 export default function Dashboard() {
   const [view, setView] = useState<View>("dashboard");
@@ -22,6 +23,7 @@ export default function Dashboard() {
     "customers":      "Customers",
     "pricing":        "Pricing Data",
     "intelligence":   "Intelligence",
+    "email-quote":     "Email Quote Parser",
     "client-portals":  "Client Portals",
     "admin-settings": "Admin Settings",
   };
@@ -35,6 +37,12 @@ export default function Dashboard() {
         <div style={{ background: C.white, borderBottom: `1px solid ${C.grey}`, padding: "0 32px", height: 54, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0, position: "sticky", top: 0, zIndex: 10 }}>
           <div style={{ fontSize: 15, fontWeight: 700, color: C.dark }}>{headerTitles[view]}</div>
           <div style={{ display: "flex", gap: 10 }}>
+            {view !== "email-quote" && (
+              <button onClick={() => setView("email-quote")}
+                style={{ padding: "7px 14px", borderRadius: 8, border: `1px solid ${C.grey}`, background: C.white, color: C.greyDark, fontSize: 13, cursor: "pointer", fontFamily: "Roboto, sans-serif", display: "flex", alignItems: "center", gap: 6 }}>
+                ✉️ Email quote
+              </button>
+            )}
             {view !== "upload-quote" && (
               <button onClick={() => setView("upload-quote")}
                 style={{ padding: "7px 14px", borderRadius: 8, border: `1px solid ${C.grey}`, background: C.white, color: C.greyDark, fontSize: 13, cursor: "pointer", fontFamily: "Roboto, sans-serif", display: "flex", alignItems: "center", gap: 6 }}>
@@ -58,6 +66,7 @@ export default function Dashboard() {
           {view === "quotes"         && <QuotesView setView={setView} />}
           {view === "customers"      && <CustomersView setView={setView} />}
           {view === "intelligence"   && <IntelligenceView />}
+          {view === "email-quote"     && <EmailQuoteView />}
           {view === "client-portals"  && <ClientPortalsView />}
           {view === "admin-settings" && <AdminSettingsView />}
           {view === "pricing"        && (
