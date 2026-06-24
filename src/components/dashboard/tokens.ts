@@ -1,0 +1,27 @@
+export const C = {
+  navy:        "#183230",
+  navyDark:    "#0f2320",
+  navyMid:     "#1f4038",
+  lime:        "#c8e63c",
+  limeLight:   "#edf7a1",
+  azure:       "#007EBB",
+  azureLight:  "#E8F4FA",
+  white:       "#FFFFFF",
+  offWhite:    "#F4F6F8",
+  grey:        "#E2E6EA",
+  greyMid:     "#C8D0D8",
+  greyDark:    "#4A5568",
+  muted:       "#718096",
+  dark:        "#1A202C",
+  amber:       "#D97706",
+  amberLight:  "#FEF3C7",
+  amberBorder: "#FCD34D",
+  red:         "#DC2626",
+  redLight:    "#FEE2E2",
+  redBorder:   "#FCA5A5",
+  green:       "#059669",
+  greenLight:  "#D1FAE5",
+  greenBorder: "#6EE7B7",
+} as const;
+
+export type View = "dashboard" | "upload-quote" | "new-quote" | "customers" | "quotes" | "pricing" | "intelligence" | "admin-settings";
