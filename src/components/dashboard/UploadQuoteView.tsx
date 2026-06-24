@@ -109,10 +109,12 @@ export default function UploadQuoteView() {
   });
 
   return (
-    <div style={{ padding: "28px 32px", maxWidth: 1200 }}>
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: "var(--az-ink)" }}>Upload RFQ Spec</h1>
-        <p style={{ margin: "4px 0 0", fontSize: 14, color: "var(--az-muted)" }}>Upload a portal PDF (HH Global, Custodian, Konica) — AI extracts all quote fields instantly.</p>
+    <div style={{ padding: "16px 24px", maxWidth: 1200 }}>
+      <div style={{ marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div>
+          <h1 style={{ margin: "0 0 2px", fontSize: 17, fontWeight: 800, color: "var(--az-ink)", letterSpacing: "-0.01em" }}>Upload RFQ Spec</h1>
+          <p style={{ margin: 0, fontSize: 13, color: "var(--az-muted)" }}>Upload a portal PDF (HH Global, Custodian, Konica) — AI extracts all fields instantly.</p>
+        </div>
       </div>
 
       {/* Upload zone */}
@@ -123,7 +125,7 @@ export default function UploadQuoteView() {
             onDragOver={e => { e.preventDefault(); setDragOver(true); }}
             onDragLeave={() => setDragOver(false)}
             onClick={() => document.getElementById("pdf-upload")?.click()}
-            style={{ background: dragOver ? "#E8F4FA" : "#ffffff", border: `2px dashed ${dragOver ? "var(--az-forest)" : "var(--az-line)"}`, borderRadius: 12, padding: "48px 32px", textAlign: "center", cursor: "pointer", marginBottom: 16, transition: "all 0.15s" }}
+            style={{ background: dragOver ? "#E8F4FA" : "#ffffff", border: `2px dashed ${dragOver ? "var(--az-forest)" : "var(--az-line)"}`, borderRadius: 12, padding: "28px 32px", textAlign: "center", cursor: "pointer", marginBottom: 16, transition: "all 0.15s" }}
           >
             <input id="pdf-upload" type="file" accept="application/pdf" style={{ display: "none" }} onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
             <div style={{ fontSize: 40, marginBottom: 12 }}>📄</div>
@@ -145,7 +147,7 @@ export default function UploadQuoteView() {
       )}
 
       {status === "loading" && (
-        <div style={{ background: "#ffffff", borderRadius: 12, border: `1px solid ${"var(--az-line)"}`, padding: "48px 32px", textAlign: "center" }}>
+        <div style={{ background: "#ffffff", borderRadius: 12, border: `1px solid ${"var(--az-line)"}`, padding: "28px 32px", textAlign: "center" }}>
           <div style={{ fontSize: 40, marginBottom: 12 }}>⚙️</div>
           <div style={{ fontSize: 18, fontWeight: 700, color: "var(--az-ink)", marginBottom: 6 }}>Reading spec…</div>
           <div style={{ fontSize: 14, color: "var(--az-muted)" }}>Applying print industry rules to {file?.name}</div>

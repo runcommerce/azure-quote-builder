@@ -13,79 +13,45 @@ import ClientPortalsView from "./ClientPortalsView";
 import EmailQuoteView from "./EmailQuoteView";
 
 const TITLES: Record<View, string> = {
-  "dashboard":      "Dashboard",
-  "upload-quote":   "Upload RFQ Spec",
-  "new-quote":      "New Quote",
-  "email-quote":    "Email Quote Parser",
-  "quotes":         "Quotes",
-  "customers":      "Customers",
-  "client-portals": "Client Portals",
-  "pricing":        "Pricing Data",
-  "intelligence":   "Intelligence",
-  "admin-settings": "Admin Settings",
+  "dashboard": "Dashboard", "upload-quote": "Upload RFQ",
+  "new-quote": "New Quote", "email-quote": "Email Quote",
+  "quotes": "Quotes", "customers": "Customers",
+  "client-portals": "Client Portals", "pricing": "Pricing Data",
+  "intelligence": "Intelligence", "admin-settings": "Admin Settings",
 };
 
-// Pill button styles matching azurecomm.ie
-const pillBtn = (primary: boolean): React.CSSProperties => ({
-  padding: "7px 18px",
-  borderRadius: 999,
-  border: primary ? "none" : "1.5px solid rgba(26,58,46,0.20)",
-  background: primary ? "#1a3a2e" : "#ffffff",
-  color: primary ? "var(--az-lime)" : "#1a3a2e",
-  fontSize: 13, fontWeight: 700, cursor: "pointer",
+const pill = (primary: boolean): React.CSSProperties => ({
+  padding: "6px 14px", borderRadius: 999,
+  border: primary ? "none" : "1.5px solid rgba(26,58,46,0.18)",
+  background: primary ? "#1a3a2e" : "#fff",
+  color: primary ? "#c8e63c" : "#1a3a2e",
+  fontSize: 12.5, fontWeight: primary ? 700 : 600, cursor: "pointer",
   fontFamily: "var(--az-font)",
-  boxShadow: primary ? "0 3px 14px rgba(26,58,46,0.22)" : "none",
-  transition: "all 0.14s",
-  letterSpacing: "0.01em",
+  boxShadow: primary ? "0 3px 12px rgba(26,58,46,0.20)" : "none",
 });
 
 export default function Dashboard() {
   const [view, setView] = useState<View>("dashboard");
-
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "var(--az-off-white)", fontFamily: "var(--az-font)" }}>
+    <div style={{ display: "flex", height: "100vh", overflow: "hidden", background: "var(--az-off-white)", fontFamily: "var(--az-font)" }}>
       <Sidebar view={view} setView={setView} />
-
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: "100vh", overflow: "auto" }}>
-        {/* White topbar — matches azurecomm.ie header style */}
-        <div style={{
-          background: "#ffffff",
-          borderBottom: "1px solid rgba(26,58,46,0.10)",
-          padding: "0 28px", height: 52,
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          flexShrink: 0, position: "sticky", top: 0, zIndex: 10,
-          boxShadow: "0 1px 8px rgba(14,31,24,0.06)",
-        }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ fontSize: 9, fontWeight: 800, color: "var(--az-muted)", letterSpacing: "0.14em", textTransform: "uppercase" }}>
-              Azure IQ
-            </span>
-            <span style={{ color: "rgba(26,58,46,0.20)" }}>·</span>
-            <span style={{ fontSize: 14, fontWeight: 700, color: "var(--az-ink)", letterSpacing: "-0.01em" }}>
-              {TITLES[view]}
-            </span>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        {/* Topbar — single, no duplicate */}
+        <div style={{ background: "#fff", borderBottom: "1px solid rgba(26,58,46,0.09)", padding: "0 22px", height: 48, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0, boxShadow: "0 1px 6px rgba(14,31,24,0.05)", zIndex: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 9.5, fontWeight: 800, color: "var(--az-muted)", letterSpacing: "0.13em", textTransform: "uppercase" }}>Azure IQ</span>
+            <span style={{ color: "rgba(26,58,46,0.20)", fontSize: 13 }}>·</span>
+            <span style={{ fontSize: 14, fontWeight: 700, color: "var(--az-ink)", letterSpacing: "-0.01em" }}>{TITLES[view]}</span>
           </div>
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            {view !== "email-quote" && (
-              <button onClick={() => setView("email-quote")} style={{ ...pillBtn(false), padding: "6px 14px", fontSize: 12.5 }}>
-                ✉ Email quote
-              </button>
-            )}
-            {view !== "upload-quote" && (
-              <button onClick={() => setView("upload-quote")} style={{ ...pillBtn(false), padding: "6px 14px", fontSize: 12.5 }}>
-                ↑ Upload spec
-              </button>
-            )}
-            {view !== "new-quote" && (
-              <button onClick={() => setView("new-quote")} style={pillBtn(true)}>
-                + New quote →
-              </button>
-            )}
+          <div style={{ display: "flex", gap: 7 }}>
+            {view !== "email-quote"  && <button onClick={() => setView("email-quote")}  style={pill(false)}>✉ Email</button>}
+            {view !== "upload-quote" && <button onClick={() => setView("upload-quote")} style={pill(false)}>↑ Upload</button>}
+            {view !== "new-quote"    && <button onClick={() => setView("new-quote")}    style={pill(true)}>+ New quote →</button>}
           </div>
         </div>
 
-        {/* Content */}
-        <div style={{ flex: 1 }}>
+        {/* Scrollable content area */}
+        <div style={{ flex: 1, overflowY: "auto" }}>
           {view === "dashboard"      && <HomeView setView={setView} recentQuotes={[]} />}
           {view === "upload-quote"   && <UploadQuoteView />}
           {view === "new-quote"      && <NewQuoteView setView={setView} />}
@@ -96,18 +62,12 @@ export default function Dashboard() {
           {view === "intelligence"   && <IntelligenceView />}
           {view === "admin-settings" && <AdminSettingsView />}
           {view === "pricing" && (
-            <div style={{ padding: "28px 32px", maxWidth: 680 }}>
-              <div style={{ marginBottom: 6 }}>
-                <span style={{ fontSize: 10, fontWeight: 700, color: "var(--az-muted)", letterSpacing: "0.12em", textTransform: "uppercase" }}>Pricing</span>
-              </div>
-              <h1 style={{ fontSize: 22, fontWeight: 800, color: "var(--az-ink)", marginBottom: 20, letterSpacing: "-0.02em" }}>Pricing Data</h1>
-              <div style={{ background: "#fff", borderRadius: 12, border: "1.5px solid var(--az-red-light)", padding: "20px 22px", marginBottom: 12, boxShadow: "var(--az-shadow)" }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--az-red)", marginBottom: 6 }}>⚠ Pricing data has never been synced from PrintLogic</div>
-                <div style={{ display: "flex", gap: 20, fontSize: 13, color: "var(--az-muted)", marginBottom: 16 }}>
-                  <span>Paper stock: <strong>never</strong></span>
-                  <span>Finishing: <strong>never</strong></span>
-                </div>
-                <button style={pillBtn(true)}>Refresh now →</button>
+            <div style={{ padding: "16px 24px" }}>
+              <h1 style={{ fontSize: 18, fontWeight: 800, color: "var(--az-ink)", marginBottom: 14 }}>Pricing Data</h1>
+              <div style={{ background: "#fff", borderRadius: 10, border: "1.5px solid var(--az-red-light)", padding: "16px 18px", maxWidth: 560 }}>
+                <div style={{ fontSize: 13.5, fontWeight: 700, color: "var(--az-red)", marginBottom: 6 }}>⚠ Pricing data has never been synced from PrintLogic</div>
+                <div style={{ fontSize: 13, color: "var(--az-muted)", marginBottom: 14 }}>Paper stock: <strong>never</strong> · Finishing: <strong>never</strong></div>
+                <button style={pill(true)}>Refresh now →</button>
               </div>
             </div>
           )}

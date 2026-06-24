@@ -230,7 +230,7 @@ ${text}`,
   };
 
   return (
-    <div style={{ padding: "28px 32px", maxWidth: 1100 }}>
+    <div style={{ padding: "16px 24px", maxWidth: 1100 }}>
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: "var(--az-ink)" }}>Email Quote Parser</h1>
         <p style={{ margin: "4px 0 0", fontSize: 14, color: "var(--az-muted)" }}>
@@ -265,7 +265,7 @@ ${text}`,
                     value={emailText}
                     onChange={e => setEmailText(e.target.value)}
                     placeholder={`Paste the full customer email here — including From, Subject, and body.\n\nExample:\nFrom: client@company.ie\nSubject: Quote request - A4 leaflets\n\nHi, we need 5,000 A4 leaflets, 170gsm silk, double sided, matt laminate...`}
-                    rows={14}
+                    rows={8}
                     style={{ width: "100%", padding: "16px", border: "none", fontSize: 14, fontFamily: "Roboto, sans-serif", color: "var(--az-ink)", resize: "vertical" as const, outline: "none", boxSizing: "border-box" as const, background: "#ffffff" }}
                   />
                 </div>

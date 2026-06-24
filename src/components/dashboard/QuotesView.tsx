@@ -12,10 +12,10 @@ interface Props { setView: (v: View) => void; }
 
 export default function QuotesView({ setView }: Props) {
   return (
-    <div style={{ padding: "28px 32px", maxWidth: 1100 }}>
+    <div style={{ padding: "16px 24px", maxWidth: 1100 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: "var(--az-ink)" }}>Quotes</h1>
+          <h1 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "var(--az-ink)" }}>Quotes</h1>
           <p style={{ margin: "4px 0 0", fontSize: 14, color: "var(--az-muted)" }}>All quotes — draft, sent, won and lost</p>
         </div>
         <div style={{ display: "flex", gap: 10 }}>

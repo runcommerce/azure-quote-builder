@@ -38,14 +38,14 @@ export default function NewQuoteView({ setView }: Props) {
   };
 
   return (
-    <div style={{ padding: "28px 32px", maxWidth: 900 }}>
+    <div style={{ padding: "16px 24px", maxWidth: 900 }}>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 24 }}>
         <button onClick={() => setView("dashboard")}
           style={{ background: "none", border: "none", color: "var(--az-muted)", cursor: "pointer", fontSize: 14, fontFamily: "Roboto, sans-serif", display: "flex", alignItems: "center", gap: 4 }}>
           ← Dashboard
         </button>
-        <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: "var(--az-ink)" }}>New Quote</h1>
+        <h1 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "var(--az-ink)" }}>New Quote</h1>
       </div>
 
       {/* Step bar */}
@@ -168,7 +168,7 @@ export default function NewQuoteView({ setView }: Props) {
             ))}
             <div style={{ marginTop: 20, padding: "16px", background: "var(--az-off-white)", borderRadius: 8 }}>
               <div style={{ fontSize: 13, color: "var(--az-muted)", marginBottom: 4 }}>Estimated price range</div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: "var(--az-ink)" }}>Connect PrintLogic to calculate</div>
+              <div style={{ fontSize: 17, fontWeight: 800, color: "var(--az-ink)" }}>Connect PrintLogic to calculate</div>
               <div style={{ fontSize: 12, color: "var(--az-muted)", marginTop: 4 }}>Add your <code style={{ background: "var(--az-line)", padding: "1px 5px", borderRadius: 4 }}>ANTHROPIC_API_KEY</code> in Admin Settings to enable AI pricing</div>
             </div>
           </div>

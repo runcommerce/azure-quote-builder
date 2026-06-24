@@ -10,11 +10,11 @@ export default function IntelligenceView() {
   ];
 
   return (
-    <div style={{ padding: "28px 32px", maxWidth: 900 }}>
+    <div style={{ padding: "16px 24px", maxWidth: 900 }}>
       <div style={{ marginBottom: 8 }}>
         <span style={{ fontSize: 12, fontWeight: 700, color: "var(--az-lime)", letterSpacing: "0.1em", textTransform: "uppercase", background: "var(--az-forest)", padding: "3px 10px", borderRadius: 20 }}>Phase 2 · Pricing Intelligence</span>
       </div>
-      <h1 style={{ margin: "12px 0 6px", fontSize: 24, fontWeight: 800, color: "var(--az-ink)" }}>Quote Intelligence</h1>
+      <h1 style={{ margin: "12px 0 6px", fontSize: 18, fontWeight: 800, color: "var(--az-ink)" }}>Quote Intelligence</h1>
       <p style={{ margin: "0 0 28px", fontSize: 14, color: "var(--az-muted)", lineHeight: 1.6 }}>
         Pricing patterns learned from your won historical quotes. Suggestions in the quote builder draw from this library.
       </p>

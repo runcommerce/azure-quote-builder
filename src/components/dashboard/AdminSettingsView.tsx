@@ -162,10 +162,10 @@ export default function AdminSettingsView() {
   };
 
   return (
-    <div style={{ padding: "28px 32px", maxWidth: 1000 }}>
+    <div style={{ padding: "16px 24px", maxWidth: 1000 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: "var(--az-ink)" }}>Admin Settings</h1>
+          <h1 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "var(--az-ink)" }}>Admin Settings</h1>
           <p style={{ margin: "4px 0 0", fontSize: 14, color: "var(--az-muted)" }}>Configure every aspect of the quote builder — edit, add and remove options line by line.</p>
         </div>
         {saved && (
@@ -217,12 +217,12 @@ export default function AdminSettingsView() {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
               <div style={{ background: "var(--az-off-white)", borderRadius: 8, padding: "16px", border: `1px solid ${"var(--az-line)"}` }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: "var(--az-muted)", textTransform: "uppercase" as const, marginBottom: 6 }}>Cost per extraction</div>
-                <div style={{ fontSize: 22, fontWeight: 800, color: "var(--az-ink)" }}>~€0.006</div>
+                <div style={{ fontSize: 17, fontWeight: 800, color: "var(--az-ink)" }}>~€0.006</div>
                 <div style={{ fontSize: 12, color: "var(--az-muted)", marginTop: 3 }}>~300 PDFs per €2</div>
               </div>
               <div style={{ background: "var(--az-off-white)", borderRadius: 8, padding: "16px", border: `1px solid ${"var(--az-line)"}` }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: "var(--az-muted)", textTransform: "uppercase" as const, marginBottom: 6 }}>Monthly cap (€60 ≈ €2/day)</div>
-                <div style={{ fontSize: 22, fontWeight: 800, color: "var(--az-ink)" }}>€60</div>
+                <div style={{ fontSize: 17, fontWeight: 800, color: "var(--az-ink)" }}>€60</div>
                 <div style={{ fontSize: 12, color: "var(--az-muted)", marginTop: 3 }}>~10,000 extractions/month</div>
               </div>
             </div>

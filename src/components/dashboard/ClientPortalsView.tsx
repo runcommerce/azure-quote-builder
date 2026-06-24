@@ -218,12 +218,12 @@ export default function ClientPortalsView() {
   }[s] || { bg: "var(--az-off-white)", color: "var(--az-muted)" });
 
   return (
-    <div style={{ padding: "28px 32px", maxWidth: 1100 }}>
+    <div style={{ padding: "16px 24px", maxWidth: 1100 }}>
       {showCreate && <CreatePortalModal onClose={() => setShowCreate(false)} onCreated={loadData} />}
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: "var(--az-ink)" }}>Client Portals</h1>
+          <h1 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "var(--az-ink)" }}>Client Portals</h1>
           <p style={{ margin: "4px 0 0", fontSize: 14, color: "var(--az-muted)" }}>
             {DEMO_PORTALS.length} portal{DEMO_PORTALS.length !== 1 ? "s" : ""} · all client requests flow into the central inbox
           </p>
