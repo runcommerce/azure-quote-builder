@@ -53,12 +53,12 @@ export default function NewQuoteView({ setView }: Props) {
         {STEP_LABELS.map((s, i) => (
           <div key={s} style={{ display: "flex", alignItems: "center", flex: i < STEP_LABELS.length - 1 ? 1 : "none" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{ width: 30, height: 30, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", background: i <= step ? "var(--az-navy)" : "var(--az-line)", color: i <= step ? "#ffffff" : "var(--az-muted)", fontSize: 13, fontWeight: 700 }}>
+              <div style={{ width: 30, height: 30, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", background: i <= step ? "var(--az-forest)" : "var(--az-line)", color: i <= step ? "#ffffff" : "var(--az-muted)", fontSize: 13, fontWeight: 700 }}>
                 {i < step ? "✓" : i + 1}
               </div>
               <span style={{ fontSize: 14, fontWeight: i === step ? 700 : 400, color: i === step ? "var(--az-ink)" : "var(--az-muted)" }}>{s}</span>
             </div>
-            {i < STEP_LABELS.length - 1 && <div style={{ flex: 1, height: 2, background: i < step ? "var(--az-navy)" : "var(--az-line)", margin: "0 16px" }} />}
+            {i < STEP_LABELS.length - 1 && <div style={{ flex: 1, height: 2, background: i < step ? "var(--az-forest)" : "var(--az-line)", margin: "0 16px" }} />}
           </div>
         ))}
       </div>
@@ -71,17 +71,17 @@ export default function NewQuoteView({ setView }: Props) {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12, marginBottom: 24 }}>
             {PRODUCTS.map(p => (
               <button key={p.id} onClick={() => setSelected(p.id)}
-                style={{ background: selected === p.id ? "var(--az-navy)" : "#ffffff", border: `2px solid ${selected === p.id ? "var(--az-green)" : "var(--az-line)"}`, borderRadius: 12, padding: "18px 20px", textAlign: "left", cursor: "pointer", fontFamily: "Roboto, sans-serif", display: "flex", gap: 14, alignItems: "flex-start", transition: "all 0.12s" }}>
+                style={{ background: selected === p.id ? "var(--az-forest)" : "#ffffff", border: `2px solid ${selected === p.id ? "var(--az-lime)" : "var(--az-line)"}`, borderRadius: 12, padding: "18px 20px", textAlign: "left", cursor: "pointer", fontFamily: "Roboto, sans-serif", display: "flex", gap: 14, alignItems: "flex-start", transition: "all 0.12s" }}>
                 <span style={{ fontSize: 26, flexShrink: 0 }}>{p.icon}</span>
                 <div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: selected === p.id ? "var(--az-green)" : "var(--az-ink)", marginBottom: 3 }}>{p.label}</div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: selected === p.id ? "var(--az-lime)" : "var(--az-ink)", marginBottom: 3 }}>{p.label}</div>
                   <div style={{ fontSize: 12, color: selected === p.id ? "rgba(255,255,255,0.55)" : "var(--az-muted)" }}>{p.desc}</div>
                 </div>
               </button>
             ))}
           </div>
           <button onClick={() => selected && setStep(1)} disabled={!selected}
-            style={{ padding: "13px 28px", borderRadius: 10, border: "none", background: selected ? "var(--az-navy)" : "var(--az-line)", color: selected ? "#ffffff" : "var(--az-muted)", fontSize: 15, fontWeight: 700, cursor: selected ? "pointer" : "not-allowed", fontFamily: "Roboto, sans-serif" }}>
+            style={{ padding: "13px 28px", borderRadius: 10, border: "none", background: selected ? "var(--az-forest)" : "var(--az-line)", color: selected ? "#ffffff" : "var(--az-muted)", fontSize: 15, fontWeight: 700, cursor: selected ? "pointer" : "not-allowed", fontFamily: "Roboto, sans-serif" }}>
             Next: Specification →
           </button>
         </div>
@@ -136,7 +136,7 @@ export default function NewQuoteView({ setView }: Props) {
               ← Back
             </button>
             <button onClick={() => setStep(2)}
-              style={{ padding: "13px 28px", borderRadius: 10, border: "none", background: "var(--az-navy)", color: "#ffffff", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
+              style={{ padding: "13px 28px", borderRadius: 10, border: "none", background: "var(--az-forest)", color: "#ffffff", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
               Review & Price →
             </button>
           </div>
@@ -148,7 +148,7 @@ export default function NewQuoteView({ setView }: Props) {
         <div>
           <h2 style={{ margin: "0 0 20px", fontSize: 20, fontWeight: 700, color: "var(--az-ink)" }}>Review & Price</h2>
           <div style={{ background: "#ffffff", borderRadius: 12, border: `1px solid ${"var(--az-line)"}`, padding: "24px", marginBottom: 20 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "var(--az-navy)", marginBottom: 16 }}>Quote Summary</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "var(--az-forest)", marginBottom: 16 }}>Quote Summary</div>
             {[
               ["Product",   PRODUCTS.find(p => p.id === selected)?.label || "—"],
               ["Customer",  form.customer || "—"],
@@ -166,7 +166,7 @@ export default function NewQuoteView({ setView }: Props) {
                 <span style={{ color: "var(--az-ink)", fontWeight: 600 }}>{v as string}</span>
               </div>
             ))}
-            <div style={{ marginTop: 20, padding: "16px", background: "var(--az-bg)", borderRadius: 8 }}>
+            <div style={{ marginTop: 20, padding: "16px", background: "var(--az-off-white)", borderRadius: 8 }}>
               <div style={{ fontSize: 13, color: "var(--az-muted)", marginBottom: 4 }}>Estimated price range</div>
               <div style={{ fontSize: 22, fontWeight: 800, color: "var(--az-ink)" }}>Connect PrintLogic to calculate</div>
               <div style={{ fontSize: 12, color: "var(--az-muted)", marginTop: 4 }}>Add your <code style={{ background: "var(--az-line)", padding: "1px 5px", borderRadius: 4 }}>ANTHROPIC_API_KEY</code> in Admin Settings to enable AI pricing</div>
@@ -177,10 +177,10 @@ export default function NewQuoteView({ setView }: Props) {
               style={{ padding: "13px 24px", borderRadius: 10, border: `1.5px solid ${"var(--az-line)"}`, background: "#ffffff", color: "var(--az-muted)", fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
               ← Back
             </button>
-            <button style={{ padding: "13px 28px", borderRadius: 10, border: "none", background: "var(--az-green)", color: "#ffffff", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
+            <button style={{ padding: "13px 28px", borderRadius: 10, border: "none", background: "var(--az-lime)", color: "#ffffff", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
               ✓ Save Quote
             </button>
-            <button style={{ padding: "13px 24px", borderRadius: 10, border: `1.5px solid ${"var(--az-navy)"}`, background: "#ffffff", color: "var(--az-navy)", fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
+            <button style={{ padding: "13px 24px", borderRadius: 10, border: `1.5px solid ${"var(--az-forest)"}`, background: "#ffffff", color: "var(--az-forest)", fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
               📤 Send to Customer
             </button>
           </div>

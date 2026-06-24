@@ -19,8 +19,8 @@ const CATEGORY_ICONS: Record<string, string> = {
 };
 
 export default function PortalHome({ portal, products }: Props) {
-  const pc = portal.primary_color || "#183230";
-  const ac = portal.accent_color || "#c8e63c";
+  const pc = portal.primary_color || "#1a3a2e";
+  const ac = portal.accent_color || "var(--az-lime)";
   const base = `/portal/${portal.slug}`;
 
   const categories = portal.categories?.length ? portal.categories :

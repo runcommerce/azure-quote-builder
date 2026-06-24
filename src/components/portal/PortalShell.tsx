@@ -20,8 +20,8 @@ interface Props {
 
 export default function PortalShell({ portal, children, activePage }: Props) {
   const base = `/portal/${portal.slug}`;
-  const pc = portal.primary_color || "#183230";
-  const ac = portal.accent_color || "#c8e63c";
+  const pc = portal.primary_color || "#1a3a2e";
+  const ac = portal.accent_color || "var(--az-lime)";
 
   const nav = [
     { label: "CATALOGUE",         href: `${base}/catalogue`     },

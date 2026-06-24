@@ -10,8 +10,8 @@ interface LineItem {
 }
 
 export default function PortalRequestQuote({ portal }: { portal: PortalConfig }) {
-  const pc = portal.primary_color || "#183230";
-  const ac = portal.accent_color || "#c8e63c";
+  const pc = portal.primary_color || "#1a3a2e";
+  const ac = portal.accent_color || "var(--az-lime)";
   const base = `/portal/${portal.slug}`;
 
   const [items, setItems] = useState<LineItem[]>([

@@ -3,7 +3,7 @@
 import PortalShell, { PortalConfig } from "./PortalShell";
 
 export default function PortalAdmin({ portal, requests }: { portal: PortalConfig; requests: any[] }) {
-  const pc = portal.primary_color || "#183230";
+  const pc = portal.primary_color || "#1a3a2e";
 
   const exportCsv = () => {
     const header = "Reference,User,Email,Items,Status,PO,Submitted";

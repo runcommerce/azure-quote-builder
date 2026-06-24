@@ -23,7 +23,7 @@ function CreatePortalModal({ onClose, onCreated }: { onClose: () => void; onCrea
     account_manager_email: "lreid@azurecomm.ie",
     account_manager_phone: "01 531 2695",
     welcome_msg: "Welcome to your print & signage portal.",
-    primary_color: "#183230", accent_color: "#c8e63c",
+    primary_color: "#1a3a2e", accent_color: "var(--az-lime)",
     invite_code: "",
   });
   const [loading, setLoading] = useState(false);
@@ -59,7 +59,7 @@ function CreatePortalModal({ onClose, onCreated }: { onClose: () => void; onCrea
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
       <div style={{ background: "#ffffff", borderRadius: 16, width: "100%", maxWidth: 640, boxShadow: "0 24px 64px rgba(0,0,0,0.25)", maxHeight: "90vh", overflow: "auto" }}>
-        <div style={{ background: "var(--az-navy)", borderRadius: "16px 16px 0 0", padding: "20px 24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ background: "var(--az-forest)", borderRadius: "16px 16px 0 0", padding: "20px 24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, marginBottom: 3 }}>Client Portals</div>
             <div style={{ color: "#ffffff", fontWeight: 700, fontSize: 18 }}>Create new client portal</div>
@@ -86,7 +86,7 @@ function CreatePortalModal({ onClose, onCreated }: { onClose: () => void; onCrea
                     onChange={e => setForm(f => ({ ...f, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "") }))}
                     placeholder="winthrop" />
                 </div>
-                {form.slug && <div style={{ fontSize: 11, color: "var(--az-blue)", marginTop: 3 }}>→ azure-quote-builder.vercel.app/portal/{form.slug}</div>}
+                {form.slug && <div style={{ fontSize: 11, color: "var(--az-forest)", marginTop: 3 }}>→ azure-quote-builder.vercel.app/portal/{form.slug}</div>}
               </div>
             </div>
 
@@ -164,7 +164,7 @@ function CreatePortalModal({ onClose, onCreated }: { onClose: () => void; onCrea
               Cancel
             </button>
             <button onClick={handleCreate} disabled={loading}
-              style={{ flex: 2, padding: "12px 0", borderRadius: 9, border: "none", background: "var(--az-navy)", color: "#ffffff", fontSize: 14, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", fontFamily: "Roboto, sans-serif" }}>
+              style={{ flex: 2, padding: "12px 0", borderRadius: 9, border: "none", background: "var(--az-forest)", color: "#ffffff", fontSize: 14, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", fontFamily: "Roboto, sans-serif" }}>
               {loading ? "Creating…" : "Create portal →"}
             </button>
           </div>
@@ -205,8 +205,8 @@ export default function ClientPortalsView() {
   // Winthrop demo portal (pre-seeded)
   const DEMO_PORTALS: Portal[] = portals.length === 0 ? [{
     id: "demo", slug: "winthrop", name: "Winthrop Technologies",
-    company_name: "Winthrop Technologies", primary_color: "#183230",
-    accent_color: "#c8e63c", active: true, account_manager_name: "Lisa Reid",
+    company_name: "Winthrop Technologies", primary_color: "#1a3a2e",
+    accent_color: "var(--az-lime)", active: true, account_manager_name: "Lisa Reid",
     account_manager_email: "lreid@azurecomm.ie", created_at: new Date().toISOString(),
     invite_code: "WINTHROP2026",
   }] : portals;
@@ -215,7 +215,7 @@ export default function ClientPortalsView() {
     pending:   { bg: "#FEF3C7", color: "#92400E" },
     reviewing: { bg: "#DBEAFE", color: "#1E40AF" },
     quoted:    { bg: "#D1FAE5", color: "#065F46" },
-  }[s] || { bg: "var(--az-bg)", color: "var(--az-muted)" });
+  }[s] || { bg: "var(--az-off-white)", color: "var(--az-muted)" });
 
   return (
     <div style={{ padding: "28px 32px", maxWidth: 1100 }}>
@@ -229,7 +229,7 @@ export default function ClientPortalsView() {
           </p>
         </div>
         <button onClick={() => setShowCreate(true)}
-          style={{ padding: "11px 22px", borderRadius: 9, border: "none", background: "var(--az-navy)", color: "#ffffff", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "Roboto, sans-serif", display: "flex", alignItems: "center", gap: 6 }}>
+          style={{ padding: "11px 22px", borderRadius: 9, border: "none", background: "var(--az-forest)", color: "#ffffff", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "Roboto, sans-serif", display: "flex", alignItems: "center", gap: 6 }}>
           + Create portal
         </button>
       </div>
@@ -241,7 +241,7 @@ export default function ClientPortalsView() {
           { id: "inbox",   label: `📥 Central Inbox (${requests.length})` },
         ].map(t => (
           <button key={t.id} onClick={() => setTab(t.id as "portals"|"inbox")}
-            style={{ padding: "10px 20px", border: "none", background: tab === t.id ? "var(--az-navy)" : "none", color: tab === t.id ? "#ffffff" : "var(--az-muted)", fontSize: 13, fontWeight: tab === t.id ? 700 : 400, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
+            style={{ padding: "10px 20px", border: "none", background: tab === t.id ? "var(--az-forest)" : "none", color: tab === t.id ? "#ffffff" : "var(--az-muted)", fontSize: 13, fontWeight: tab === t.id ? 700 : 400, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
             {t.label}
           </button>
         ))}
@@ -264,7 +264,7 @@ export default function ClientPortalsView() {
               <div style={{ padding: "16px 18px" }}>
                 {/* URL */}
                 <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center" }}>
-                  <div style={{ flex: 1, fontSize: 12, color: "var(--az-blue)", background: "var(--az-blue-light)", padding: "5px 10px", borderRadius: 6, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
+                  <div style={{ flex: 1, fontSize: 12, color: "var(--az-forest)", background: "rgba(200,230,60,0.10)", padding: "5px 10px", borderRadius: 6, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
                     /portal/{p.slug}
                   </div>
                   <button onClick={() => copy(`${window.location.origin}/portal/${p.slug}`, p.id)}
@@ -272,7 +272,7 @@ export default function ClientPortalsView() {
                     {copied === p.id ? "✓ Copied" : "Copy link"}
                   </button>
                   <a href={`/portal/${p.slug}`} target="_blank" rel="noreferrer"
-                    style={{ padding: "5px 10px", borderRadius: 6, border: "none", background: "var(--az-navy)", color: "#ffffff", fontSize: 12, textDecoration: "none" }}>
+                    style={{ padding: "5px 10px", borderRadius: 6, border: "none", background: "var(--az-forest)", color: "#ffffff", fontSize: 12, textDecoration: "none" }}>
                     Open ↗
                   </a>
                 </div>
@@ -286,7 +286,7 @@ export default function ClientPortalsView() {
                   </div>
                   <div>
                     <div style={{ fontSize: 11, color: "var(--az-muted)", fontWeight: 600, textTransform: "uppercase" as const, marginBottom: 2 }}>Invite Code</div>
-                    <div style={{ fontFamily: "monospace", fontSize: 14, fontWeight: 700, color: "var(--az-navy)", background: "var(--az-bg)", padding: "3px 8px", borderRadius: 6, display: "inline-block" }}>
+                    <div style={{ fontFamily: "monospace", fontSize: 14, fontWeight: 700, color: "var(--az-forest)", background: "var(--az-off-white)", padding: "3px 8px", borderRadius: 6, display: "inline-block" }}>
                       {p.invite_code}
                     </div>
                   </div>
@@ -300,7 +300,7 @@ export default function ClientPortalsView() {
                 {/* Actions */}
                 <div style={{ display: "flex", gap: 8 }}>
                   <a href={`/portal/${p.slug}/admin`} target="_blank" rel="noreferrer"
-                    style={{ flex: 1, padding: "8px 0", textAlign: "center" as const, borderRadius: 8, border: "none", background: "var(--az-navy)", color: "#ffffff", fontSize: 13, fontWeight: 600, textDecoration: "none" }}>
+                    style={{ flex: 1, padding: "8px 0", textAlign: "center" as const, borderRadius: 8, border: "none", background: "var(--az-forest)", color: "#ffffff", fontSize: 13, fontWeight: 600, textDecoration: "none" }}>
                     View requests
                   </a>
                   <button style={{ padding: "8px 14px", borderRadius: 8, border: `1px solid ${"var(--az-line)"}`, background: "#ffffff", fontSize: 13, cursor: "pointer" }}>
@@ -334,7 +334,7 @@ export default function ClientPortalsView() {
             ) : (
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
-                  <tr style={{ background: "var(--az-bg)", borderBottom: `1px solid ${"var(--az-line)"}` }}>
+                  <tr style={{ background: "var(--az-off-white)", borderBottom: `1px solid ${"var(--az-line)"}` }}>
                     {["Reference","Portal","Client User","Status","Submitted",""].map(h => (
                       <th key={h} style={{ padding: "10px 16px", textAlign: "left" as const, fontSize: 11, fontWeight: 700, color: "var(--az-muted)", textTransform: "uppercase" as const, letterSpacing: "0.06em" }}>{h}</th>
                     ))}
@@ -345,7 +345,7 @@ export default function ClientPortalsView() {
                     const s = STATUS_BADGE(r.status);
                     return (
                       <tr key={r.reference} style={{ borderBottom: i < requests.length - 1 ? `1px solid ${"var(--az-line)"}` : "none" }}>
-                        <td style={{ padding: "12px 16px", fontWeight: 700, color: "var(--az-blue)", fontSize: 14 }}>{r.reference}</td>
+                        <td style={{ padding: "12px 16px", fontWeight: 700, color: "var(--az-forest)", fontSize: 14 }}>{r.reference}</td>
                         <td style={{ padding: "12px 16px" }}>
                           <div style={{ fontSize: 13, fontWeight: 600, color: "var(--az-ink)" }}>{r.portal_name}</div>
                           <div style={{ fontSize: 11, color: "var(--az-muted)" }}>/portal/{r.slug}</div>

@@ -1,38 +1,46 @@
-/* Azure Communications — AI Quote Builder Design System */
+/* Azure Communications — exact brand colours from azurecomm.ie */
 
 :root {
-  --az-bg:          #f5f9fc;
-  --az-bg-soft:     #eef6fb;
-  --az-surface:     #ffffff;
-  --az-ink:         #102033;
-  --az-muted:       #5e7184;
-  --az-line:        rgba(16, 32, 51, 0.10);
-  --az-blue:        #1499d6;
-  --az-blue-dark:   #0873ad;
-  --az-blue-light:  #e6f5fc;
-  --az-navy:        #102a43;
-  --az-green:       #7bc043;
-  --az-green-light: #f0f9e6;
+  /* Core brand palette — from azurecomm.ie screenshot */
+  --az-forest:      #1a3a2e;   /* dark forest green hero/sidebar */
+  --az-forest-deep: #122a21;   /* deeper shade for hover/active */
+  --az-lime:        #c8e63c;   /* lime green accent (dot grid, highlights) */
+  --az-lime-dark:   #a8c420;   /* darker lime for hover */
+  --az-white:       #ffffff;
+  --az-off-white:   #f7f9f7;   /* very slight green tint off-white */
+  --az-ink:         #0e1f18;   /* near-black with green tint */
+  --az-muted:       #5a7066;   /* muted forest green for secondary text */
+  --az-line:        rgba(26,58,46,0.12);
+  --az-line-light:  rgba(255,255,255,0.12); /* lines on dark bg */
+
+  /* Status colours */
   --az-amber:       #d97706;
   --az-amber-light: #fef3c7;
   --az-red:         #dc2626;
   --az-red-light:   #fee2e2;
-  --az-radius-sm:   8px;
-  --az-radius-md:   14px;
-  --az-radius-lg:   22px;
-  --az-shadow:      0 4px 24px rgba(16, 42, 67, 0.10);
-  --az-shadow-lg:   0 8px 40px rgba(16, 42, 67, 0.14);
+  --az-green-ok:    #16a34a;
+  --az-green-light: #dcfce7;
+
+  /* Layout */
+  --az-radius-sm:   6px;
+  --az-radius-md:   12px;
+  --az-radius-lg:   20px;
+  --az-radius-pill: 999px;
+  --az-shadow:      0 2px 16px rgba(14,31,24,0.10);
+  --az-shadow-md:   0 4px 28px rgba(14,31,24,0.14);
+  --az-shadow-lg:   0 8px 48px rgba(14,31,24,0.18);
+
+  /* Typography */
   --az-font:        Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
 html { font-size: 15px; scroll-behavior: smooth; }
 
 body {
   font-family: var(--az-font);
   color: var(--az-ink);
-  background: var(--az-bg);
+  background: var(--az-off-white);
   line-height: 1.55;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -43,14 +51,7 @@ img { max-width: 100%; display: block; }
 button { font-family: var(--az-font); cursor: pointer; }
 input, select, textarea { font-family: var(--az-font); }
 
-/* Scrollbar */
-::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--az-line); border-radius: 3px; }
-
-/* Focus ring */
-:focus-visible {
-  outline: 2px solid var(--az-blue);
-  outline-offset: 2px;
-  border-radius: 4px;
-}
+::-webkit-scrollbar-thumb { background: rgba(26,58,46,0.20); border-radius: 3px; }
+:focus-visible { outline: 2px solid var(--az-lime); outline-offset: 2px; border-radius: 4px; }

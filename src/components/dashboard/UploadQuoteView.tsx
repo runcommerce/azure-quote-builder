@@ -123,7 +123,7 @@ export default function UploadQuoteView() {
             onDragOver={e => { e.preventDefault(); setDragOver(true); }}
             onDragLeave={() => setDragOver(false)}
             onClick={() => document.getElementById("pdf-upload")?.click()}
-            style={{ background: dragOver ? "#E8F4FA" : "#ffffff", border: `2px dashed ${dragOver ? "var(--az-blue)" : "var(--az-line)"}`, borderRadius: 12, padding: "48px 32px", textAlign: "center", cursor: "pointer", marginBottom: 16, transition: "all 0.15s" }}
+            style={{ background: dragOver ? "#E8F4FA" : "#ffffff", border: `2px dashed ${dragOver ? "var(--az-forest)" : "var(--az-line)"}`, borderRadius: 12, padding: "48px 32px", textAlign: "center", cursor: "pointer", marginBottom: 16, transition: "all 0.15s" }}
           >
             <input id="pdf-upload" type="file" accept="application/pdf" style={{ display: "none" }} onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
             <div style={{ fontSize: 40, marginBottom: 12 }}>📄</div>
@@ -137,7 +137,7 @@ export default function UploadQuoteView() {
           {error && <div style={{ padding: "10px 16px", background: "var(--az-red-light)", border: `1px solid ${"#fca5a5"}`, borderRadius: 8, color: "var(--az-red)", fontSize: 14, marginBottom: 12 }}>{error}</div>}
           {file && (
             <button onClick={parseSpec}
-              style={{ width: "100%", padding: "14px 0", borderRadius: 10, border: "none", background: "var(--az-navy)", color: "#ffffff", fontSize: 16, fontWeight: 700, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
+              style={{ width: "100%", padding: "14px 0", borderRadius: 10, border: "none", background: "var(--az-forest)", color: "#ffffff", fontSize: 16, fontWeight: 700, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
               Extract quote fields →
             </button>
           )}
@@ -166,7 +166,7 @@ export default function UploadQuoteView() {
 
             {/* PrintLogic match */}
             <div style={{ background: "#ffffff", borderRadius: 12, border: `1px solid ${"var(--az-line)"}`, padding: "16px 20px", marginBottom: 16 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--az-navy)", marginBottom: 12, display: "flex", gap: 6 }}>🎯 PrintLogic Auto-Match</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--az-forest)", marginBottom: 12, display: "flex", gap: 6 }}>🎯 PrintLogic Auto-Match</div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
                 {[
                   ["Stock", plMaterial ? plMaterial.printlogic + (plMaterial.confirmed ? "" : " ⚠") : "No match — select manually"],
@@ -189,7 +189,7 @@ export default function UploadQuoteView() {
             {/* Field groups */}
             {GROUPS.map(group => (
               <div key={group.title} style={{ background: "#ffffff", borderRadius: 12, border: `1px solid ${"var(--az-line)"}`, overflow: "hidden", marginBottom: 12 }}>
-                <div style={{ background: "var(--az-navy)", padding: "12px 18px", display: "flex", gap: 8, alignItems: "center" }}>
+                <div style={{ background: "var(--az-forest)", padding: "12px 18px", display: "flex", gap: 8, alignItems: "center" }}>
                   <span>{group.icon}</span>
                   <span style={{ fontSize: 12, fontWeight: 700, color: "#ffffff", textTransform: "uppercase" as const, letterSpacing: "0.08em" }}>{group.title}</span>
                 </div>
@@ -229,7 +229,7 @@ export default function UploadQuoteView() {
               </button>
               {status === "done" && (
                 <button onClick={() => setStatus("approved")}
-                  style={{ flex: 1, minWidth: 200, padding: "12px 20px", borderRadius: 10, border: "none", background: "var(--az-navy)", color: "#ffffff", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
+                  style={{ flex: 1, minWidth: 200, padding: "12px 20px", borderRadius: 10, border: "none", background: "var(--az-forest)", color: "#ffffff", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
                   ✓ Approve — Ready for PrintLogic
                 </button>
               )}
@@ -237,7 +237,7 @@ export default function UploadQuoteView() {
 
             {status === "approved" && (
               <div style={{ background: "#ffffff", border: `1.5px solid ${"#86efac"}`, borderRadius: 12, padding: "20px", marginTop: 16 }}>
-                <div style={{ fontWeight: 700, color: "var(--az-navy)", marginBottom: 12, fontSize: 16 }}>✅ Approved — PrintLogic Steps</div>
+                <div style={{ fontWeight: 700, color: "var(--az-forest)", marginBottom: 12, fontSize: 16 }}>✅ Approved — PrintLogic Steps</div>
                 {[
                   `Find customer: ${g("customer_name") || "[check email]"}`,
                   `Create Costed Quote → Job type: ${g("product_type") || "[confirm]"}`,
@@ -248,7 +248,7 @@ export default function UploadQuoteView() {
                   `Paste item details (right panel) → Calculate → Review margin → Send`,
                 ].map((s, i) => (
                   <div key={i} style={{ display: "flex", gap: 10, padding: "7px 0", borderBottom: i < 6 ? `1px solid ${"var(--az-line)"}` : "none", fontSize: 14 }}>
-                    <span style={{ color: "var(--az-blue)", fontWeight: 700, minWidth: 22 }}>{i + 1}.</span><span>{s}</span>
+                    <span style={{ color: "var(--az-forest)", fontWeight: 700, minWidth: 22 }}>{i + 1}.</span><span>{s}</span>
                   </div>
                 ))}
               </div>
@@ -258,9 +258,9 @@ export default function UploadQuoteView() {
           {/* Right: live preview */}
           <div style={{ position: "sticky", top: 20 }}>
             <div style={{ background: "#0a1a10", borderRadius: 12, overflow: "hidden", marginBottom: 14 }}>
-              <div style={{ background: "var(--az-navy)", padding: "14px 18px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ background: "var(--az-forest)", padding: "14px 18px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--az-green)", textTransform: "uppercase" as const, letterSpacing: "0.08em" }}>🖨 PrintLogic Item Details</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--az-lime)", textTransform: "uppercase" as const, letterSpacing: "0.08em" }}>🖨 PrintLogic Item Details</div>
                   <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 2 }}>Live · updates as you edit</div>
                 </div>
                 <button onClick={() => { navigator.clipboard.writeText(itemDetails); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
@@ -275,7 +275,7 @@ export default function UploadQuoteView() {
 
             {/* Summary */}
             <div style={{ background: "#ffffff", borderRadius: 12, border: `1px solid ${"var(--az-line)"}`, padding: "16px 18px" }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--az-navy)", marginBottom: 12 }}>Quick summary</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--az-forest)", marginBottom: 12 }}>Quick summary</div>
               {[
                 ["Customer",  g("customer_name")],
                 ["Product",   g("product_type")],

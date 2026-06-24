@@ -13,7 +13,7 @@ const STATUS = {
 };
 
 export default function PortalMyQuotes({ portal }: { portal: PortalConfig }) {
-  const pc = portal.primary_color || "#183230";
+  const pc = portal.primary_color || "#1a3a2e";
   const [requests, setRequests] = useState<{ reference: string; status: string; submitted_at: string; items: { product: string }[] }[]>([]);
   const [loading, setLoading] = useState(true);
 

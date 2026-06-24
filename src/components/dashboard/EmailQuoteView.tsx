@@ -224,7 +224,7 @@ ${text}`,
   };
 
   const CONFIDENCE_STYLE = {
-    high:   { bg: "var(--az-green-light)", color: "var(--az-green)",  label: "High confidence" },
+    high:   { bg: "rgba(200,230,60,0.12)", color: "var(--az-lime)",  label: "High confidence" },
     medium: { bg: "var(--az-amber-light)", color: "var(--az-amber)",  label: "Review needed"   },
     low:    { bg: "var(--az-red-light)",   color: "var(--az-red)",    label: "Low confidence"  },
   };
@@ -249,7 +249,7 @@ ${text}`,
                 { id: "inbox",  label: "📥 Connected inbox" },
               ].map(t => (
                 <button key={t.id} onClick={() => setTab(t.id as "paste"|"inbox")}
-                  style={{ padding: "10px 20px", border: "none", background: tab === t.id ? "var(--az-navy)" : "none", color: tab === t.id ? "#ffffff" : "var(--az-muted)", fontSize: 13, fontWeight: tab === t.id ? 700 : 400, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
+                  style={{ padding: "10px 20px", border: "none", background: tab === t.id ? "var(--az-forest)" : "none", color: tab === t.id ? "#ffffff" : "var(--az-muted)", fontSize: 13, fontWeight: tab === t.id ? 700 : 400, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
                   {t.label}
                 </button>
               ))}
@@ -258,7 +258,7 @@ ${text}`,
             {tab === "paste" && (
               <>
                 <div style={{ background: "#ffffff", borderRadius: 12, border: `1px solid ${"var(--az-line)"}`, overflow: "hidden", marginBottom: 14 }}>
-                  <div style={{ background: "var(--az-bg)", padding: "10px 16px", fontSize: 12, fontWeight: 700, color: "var(--az-muted)", textTransform: "uppercase" as const, letterSpacing: "0.06em", borderBottom: `1px solid ${"var(--az-line)"}` }}>
+                  <div style={{ background: "var(--az-off-white)", padding: "10px 16px", fontSize: 12, fontWeight: 700, color: "var(--az-muted)", textTransform: "uppercase" as const, letterSpacing: "0.06em", borderBottom: `1px solid ${"var(--az-line)"}` }}>
                     Email content
                   </div>
                   <textarea
@@ -274,7 +274,7 @@ ${text}`,
 
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap" as const }}>
                   <button onClick={() => parseEmail(emailText)}
-                    style={{ padding: "13px 28px", borderRadius: 10, border: "none", background: "var(--az-navy)", color: "#ffffff", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "Roboto, sans-serif", display: "flex", alignItems: "center", gap: 8 }}>
+                    style={{ padding: "13px 28px", borderRadius: 10, border: "none", background: "var(--az-forest)", color: "#ffffff", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "Roboto, sans-serif", display: "flex", alignItems: "center", gap: 8 }}>
                     🤖 Parse & extract quote fields
                   </button>
                   <button onClick={() => { fileRef.current?.click(); }}
@@ -295,9 +295,9 @@ ${text}`,
 
             {tab === "inbox" && (
               <div style={{ background: "#ffffff", borderRadius: 12, border: `1px solid ${"var(--az-line)"}`, overflow: "hidden" }}>
-                <div style={{ background: "var(--az-navy)", padding: "14px 18px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ background: "var(--az-forest)", padding: "14px 18px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div>
-                    <div style={{ color: "var(--az-green)", fontSize: 11, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.08em" }}>Connected Mailbox</div>
+                    <div style={{ color: "var(--az-lime)", fontSize: 11, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.08em" }}>Connected Mailbox</div>
                     <div style={{ color: "#ffffff", fontWeight: 600, fontSize: 14 }}>quotes@azurecomm.ie</div>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -309,10 +309,10 @@ ${text}`,
                 {inboxEmails.map((email, i) => (
                   <div key={email.id}
                     onClick={() => { setSelectedEmail(email.id); setEmailText(SAMPLE_EMAILS[i % SAMPLE_EMAILS.length]?.body || ""); }}
-                    style={{ padding: "14px 18px", borderBottom: i < inboxEmails.length - 1 ? `1px solid ${"var(--az-line)"}` : "none", cursor: "pointer", background: selectedEmail === email.id ? "#E8F4FA" : email.unread ? "#FAFFFE" : "#ffffff", borderLeft: selectedEmail === email.id ? `3px solid ${"var(--az-blue)"}` : "3px solid transparent", transition: "background 0.1s" }}>
+                    style={{ padding: "14px 18px", borderBottom: i < inboxEmails.length - 1 ? `1px solid ${"var(--az-line)"}` : "none", cursor: "pointer", background: selectedEmail === email.id ? "#E8F4FA" : email.unread ? "#FAFFFE" : "#ffffff", borderLeft: selectedEmail === email.id ? `3px solid ${"var(--az-forest)"}` : "3px solid transparent", transition: "background 0.1s" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
                       <div style={{ fontSize: 14, fontWeight: email.unread ? 700 : 500, color: "var(--az-ink)", display: "flex", alignItems: "center", gap: 7 }}>
-                        {email.unread && <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--az-blue)", flexShrink: 0, display: "inline-block" }} />}
+                        {email.unread && <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--az-forest)", flexShrink: 0, display: "inline-block" }} />}
                         {email.from}
                       </div>
                       <div style={{ fontSize: 12, color: "var(--az-muted)", whiteSpace: "nowrap" as const }}>{email.received}</div>
@@ -325,7 +325,7 @@ ${text}`,
                 {selectedEmail && (
                   <div style={{ padding: "14px 18px", borderTop: `1px solid ${"var(--az-line)"}`, background: "#F0F9FF" }}>
                     <button onClick={() => parseEmail(emailText)}
-                      style={{ width: "100%", padding: "11px 0", borderRadius: 8, border: "none", background: "var(--az-navy)", color: "#ffffff", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
+                      style={{ width: "100%", padding: "11px 0", borderRadius: 8, border: "none", background: "var(--az-forest)", color: "#ffffff", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
                       🤖 Parse selected email →
                     </button>
                   </div>
@@ -337,17 +337,17 @@ ${text}`,
           {/* Right: sample emails + tips */}
           <div>
             <div style={{ background: "#ffffff", borderRadius: 12, border: `1px solid ${"var(--az-line)"}`, padding: "18px", marginBottom: 14 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--az-navy)", marginBottom: 12 }}>Try with a sample email</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--az-forest)", marginBottom: 12 }}>Try with a sample email</div>
               {SAMPLE_EMAILS.map(s => (
                 <button key={s.label} onClick={() => setEmailText(s.body)}
-                  style={{ display: "block", width: "100%", padding: "9px 14px", borderRadius: 8, border: `1px solid ${"var(--az-line)"}`, background: "var(--az-bg)", color: "var(--az-ink)", fontSize: 13, textAlign: "left" as const, cursor: "pointer", fontFamily: "Roboto, sans-serif", marginBottom: 8 }}>
+                  style={{ display: "block", width: "100%", padding: "9px 14px", borderRadius: 8, border: `1px solid ${"var(--az-line)"}`, background: "var(--az-off-white)", color: "var(--az-ink)", fontSize: 13, textAlign: "left" as const, cursor: "pointer", fontFamily: "Roboto, sans-serif", marginBottom: 8 }}>
                   📧 {s.label}
                 </button>
               ))}
             </div>
 
             <div style={{ background: "#ffffff", borderRadius: 12, border: `1px solid ${"var(--az-line)"}`, padding: "18px" }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--az-navy)", marginBottom: 10 }}>What gets extracted</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--az-forest)", marginBottom: 10 }}>What gets extracted</div>
               {[
                 "Customer name and email",
                 "Product type (leaflet, brochure, etc.)",
@@ -359,7 +359,7 @@ ${text}`,
                 "PO number if provided",
               ].map(i => (
                 <div key={i} style={{ fontSize: 13, color: "var(--az-muted)", padding: "4px 0", display: "flex", gap: 7 }}>
-                  <span style={{ color: "var(--az-green)" }}>✓</span>{i}
+                  <span style={{ color: "var(--az-lime)" }}>✓</span>{i}
                 </div>
               ))}
             </div>
@@ -401,7 +401,7 @@ ${text}`,
             {/* Left: editable fields */}
             <div>
               <div style={{ background: "#ffffff", borderRadius: 12, border: `1px solid ${"var(--az-line)"}`, overflow: "hidden" }}>
-                <div style={{ background: "var(--az-navy)", padding: "12px 18px", display: "flex", gap: 8, alignItems: "center" }}>
+                <div style={{ background: "var(--az-forest)", padding: "12px 18px", display: "flex", gap: 8, alignItems: "center" }}>
                   <span>📋</span>
                   <span style={{ fontSize: 12, fontWeight: 700, color: "#ffffff", textTransform: "uppercase" as const, letterSpacing: "0.08em" }}>Customer & Job</span>
                 </div>
@@ -416,7 +416,7 @@ ${text}`,
               </div>
 
               <div style={{ background: "#ffffff", borderRadius: 12, border: `1px solid ${"var(--az-line)"}`, overflow: "hidden", marginTop: 12 }}>
-                <div style={{ background: "var(--az-navy)", padding: "12px 18px", display: "flex", gap: 8, alignItems: "center" }}>
+                <div style={{ background: "var(--az-forest)", padding: "12px 18px", display: "flex", gap: 8, alignItems: "center" }}>
                   <span>📐</span>
                   <span style={{ fontSize: 12, fontWeight: 700, color: "#ffffff", textTransform: "uppercase" as const, letterSpacing: "0.08em" }}>Dimensions & Substrate</span>
                 </div>
@@ -429,7 +429,7 @@ ${text}`,
               </div>
 
               <div style={{ background: "#ffffff", borderRadius: 12, border: `1px solid ${"var(--az-line)"}`, overflow: "hidden", marginTop: 12 }}>
-                <div style={{ background: "var(--az-navy)", padding: "12px 18px", display: "flex", gap: 8, alignItems: "center" }}>
+                <div style={{ background: "var(--az-forest)", padding: "12px 18px", display: "flex", gap: 8, alignItems: "center" }}>
                   <span>🖨</span>
                   <span style={{ fontSize: 12, fontWeight: 700, color: "#ffffff", textTransform: "uppercase" as const, letterSpacing: "0.08em" }}>Print & Finishing</span>
                 </div>
@@ -457,7 +457,7 @@ ${text}`,
                   ← Start over
                 </button>
                 <button onClick={confirmQuote}
-                  style={{ flex: 1, minWidth: 200, padding: "11px 20px", borderRadius: 10, border: "none", background: "var(--az-navy)", color: "#ffffff", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
+                  style={{ flex: 1, minWidth: 200, padding: "11px 20px", borderRadius: 10, border: "none", background: "var(--az-forest)", color: "#ffffff", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
                   ✓ Confirm — Ready for PrintLogic
                 </button>
               </div>
@@ -466,9 +466,9 @@ ${text}`,
             {/* Right: original email */}
             <div style={{ position: "sticky", top: 20 }}>
               <div style={{ background: "#ffffff", borderRadius: 12, border: `1px solid ${"var(--az-line)"}`, overflow: "hidden" }}>
-                <div style={{ background: "var(--az-bg)", padding: "12px 16px", borderBottom: `1px solid ${"var(--az-line)"}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ background: "var(--az-off-white)", padding: "12px 16px", borderBottom: `1px solid ${"var(--az-line)"}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span style={{ fontSize: 12, fontWeight: 700, color: "var(--az-muted)", textTransform: "uppercase" as const, letterSpacing: "0.06em" }}>Original email</span>
-                  <button onClick={() => setStage("input")} style={{ background: "none", border: "none", color: "var(--az-blue)", fontSize: 12, cursor: "pointer" }}>Edit</button>
+                  <button onClick={() => setStage("input")} style={{ background: "none", border: "none", color: "var(--az-forest)", fontSize: 12, cursor: "pointer" }}>Edit</button>
                 </div>
                 <pre style={{ margin: 0, padding: "16px", fontSize: 12, color: "var(--az-muted)", lineHeight: 1.7, whiteSpace: "pre-wrap" as const, maxHeight: 400, overflowY: "auto", fontFamily: "'JetBrains Mono', monospace" }}>
                   {parsed.raw_email}
@@ -495,7 +495,7 @@ ${text}`,
       {stage === "confirmed" && parsed && (
         <div style={{ background: "#ffffff", borderRadius: 16, border: `1.5px solid ${"#86efac"}`, padding: "32px", maxWidth: 700 }}>
           <div style={{ display: "flex", gap: 14, alignItems: "flex-start", marginBottom: 24 }}>
-            <div style={{ width: 52, height: 52, borderRadius: "50%", background: "var(--az-green-light)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0 }}>✅</div>
+            <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(200,230,60,0.12)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0 }}>✅</div>
             <div>
               <div style={{ fontSize: 20, fontWeight: 800, color: "var(--az-ink)", marginBottom: 4 }}>Quote confirmed — ready for PrintLogic</div>
               <div style={{ fontSize: 14, color: "var(--az-muted)" }}>Follow the checklist below to enter in PrintLogic</div>
@@ -512,7 +512,7 @@ ${text}`,
             `${parseInt(parsed.substrate_weight_gsm) >= 170 ? "⚠ Apply scoring before fold · " : ""}Paste item details → Calculate → Review margin → Send`,
           ].map((s, i) => (
             <div key={i} style={{ display: "flex", gap: 12, padding: "9px 0", borderBottom: i < 6 ? `1px solid ${"var(--az-line)"}` : "none", fontSize: 15 }}>
-              <span style={{ color: "var(--az-blue)", fontWeight: 700, minWidth: 24 }}>{i + 1}.</span><span>{s}</span>
+              <span style={{ color: "var(--az-forest)", fontWeight: 700, minWidth: 24 }}>{i + 1}.</span><span>{s}</span>
             </div>
           ))}
 
@@ -521,7 +521,7 @@ ${text}`,
               style={{ padding: "11px 20px", borderRadius: 10, border: `1.5px solid ${"var(--az-line)"}`, background: "#ffffff", color: "var(--az-muted)", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
               Parse another email
             </button>
-            <button style={{ padding: "11px 20px", borderRadius: 10, border: "none", background: "var(--az-blue)", color: "#ffffff", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
+            <button style={{ padding: "11px 20px", borderRadius: 10, border: "none", background: "var(--az-forest)", color: "#ffffff", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
               📤 Send follow-up email
             </button>
           </div>

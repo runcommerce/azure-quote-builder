@@ -3,8 +3,8 @@ import { C, View } from "./tokens";
 
 const STATUS_STYLES = {
   draft:  { bg: "#F3F4F6", color: "#6B7280", label: "Draft"  },
-  sent:   { bg: "var(--az-blue-light)", color: "var(--az-blue)", label: "Sent"  },
-  won:    { bg: "var(--az-green-light)", color: "var(--az-green)", label: "Won"   },
+  sent:   { bg: "rgba(200,230,60,0.10)", color: "var(--az-forest)", label: "Sent"  },
+  won:    { bg: "rgba(200,230,60,0.12)", color: "var(--az-lime)", label: "Won"   },
   lost:   { bg: "var(--az-red-light)",   color: "var(--az-red)",   label: "Lost"  },
 };
 
@@ -20,11 +20,11 @@ export default function QuotesView({ setView }: Props) {
         </div>
         <div style={{ display: "flex", gap: 10 }}>
           <button onClick={() => setView("upload-quote")}
-            style={{ padding: "10px 18px", borderRadius: 9, border: `1.5px solid ${"var(--az-navy)"}`, background: "#ffffff", color: "var(--az-navy)", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
+            style={{ padding: "10px 18px", borderRadius: 9, border: `1.5px solid ${"var(--az-forest)"}`, background: "#ffffff", color: "var(--az-forest)", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
             📄 Upload RFQ
           </button>
           <button onClick={() => setView("new-quote")}
-            style={{ padding: "10px 18px", borderRadius: 9, border: "none", background: "var(--az-navy)", color: "#ffffff", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
+            style={{ padding: "10px 18px", borderRadius: 9, border: "none", background: "var(--az-forest)", color: "#ffffff", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
             ✚ New Quote
           </button>
         </div>
@@ -34,7 +34,7 @@ export default function QuotesView({ setView }: Props) {
       <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
         {["All", "Draft", "Sent", "Won", "Lost"].map(f => (
           <button key={f}
-            style={{ padding: "7px 16px", borderRadius: 20, border: `1px solid ${f === "All" ? "var(--az-navy)" : "var(--az-line)"}`, background: f === "All" ? "var(--az-navy)" : "#ffffff", color: f === "All" ? "#ffffff" : "var(--az-muted)", fontSize: 13, fontWeight: f === "All" ? 700 : 400, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
+            style={{ padding: "7px 16px", borderRadius: 20, border: `1px solid ${f === "All" ? "var(--az-forest)" : "var(--az-line)"}`, background: f === "All" ? "var(--az-forest)" : "#ffffff", color: f === "All" ? "#ffffff" : "var(--az-muted)", fontSize: 13, fontWeight: f === "All" ? 700 : 400, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
             {f}
           </button>
         ))}
@@ -46,11 +46,11 @@ export default function QuotesView({ setView }: Props) {
         <div style={{ fontSize: 14, color: "var(--az-muted)", marginBottom: 20 }}>Upload an RFQ spec or create a quote manually to get started.</div>
         <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
           <button onClick={() => setView("upload-quote")}
-            style={{ padding: "10px 20px", borderRadius: 8, border: "none", background: "var(--az-navy)", color: "#ffffff", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
+            style={{ padding: "10px 20px", borderRadius: 8, border: "none", background: "var(--az-forest)", color: "#ffffff", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
             📄 Upload spec
           </button>
           <button onClick={() => setView("new-quote")}
-            style={{ padding: "10px 20px", borderRadius: 8, border: `1.5px solid ${"var(--az-navy)"}`, background: "#ffffff", color: "var(--az-navy)", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
+            style={{ padding: "10px 20px", borderRadius: 8, border: `1.5px solid ${"var(--az-forest)"}`, background: "#ffffff", color: "var(--az-forest)", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
             ✚ New quote
           </button>
         </div>
