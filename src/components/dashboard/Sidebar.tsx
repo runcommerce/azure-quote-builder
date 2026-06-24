@@ -10,6 +10,7 @@ const NAV = [
   { id: "customers",      label: "Customers",        icon: "👥" },
   { id: "pricing",        label: "Pricing Data",     icon: "💶" },
   { id: "intelligence",   label: "Intelligence",     icon: "🔍" },
+  { id: "client-portals", label: "Client Portals",   icon: "🏢" },
   { id: "admin-settings", label: "Admin Settings",   icon: "⚙" },
 ] as const;
 

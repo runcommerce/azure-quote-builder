@@ -9,6 +9,7 @@ import QuotesView from "./QuotesView";
 import CustomersView from "./CustomersView";
 import IntelligenceView from "./IntelligenceView";
 import AdminSettingsView from "./AdminSettingsView";
+import ClientPortalsView from "./ClientPortalsView";
 
 export default function Dashboard() {
   const [view, setView] = useState<View>("dashboard");
@@ -21,6 +22,7 @@ export default function Dashboard() {
     "customers":      "Customers",
     "pricing":        "Pricing Data",
     "intelligence":   "Intelligence",
+    "client-portals":  "Client Portals",
     "admin-settings": "Admin Settings",
   };
 
@@ -56,6 +58,7 @@ export default function Dashboard() {
           {view === "quotes"         && <QuotesView setView={setView} />}
           {view === "customers"      && <CustomersView setView={setView} />}
           {view === "intelligence"   && <IntelligenceView />}
+          {view === "client-portals"  && <ClientPortalsView />}
           {view === "admin-settings" && <AdminSettingsView />}
           {view === "pricing"        && (
             <div style={{ padding: "28px 32px", maxWidth: 700 }}>

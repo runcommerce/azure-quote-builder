@@ -24,4 +24,4 @@ export const C = {
   greenBorder: "#6EE7B7",
 } as const;
 
-export type View = "dashboard" | "upload-quote" | "new-quote" | "customers" | "quotes" | "pricing" | "intelligence" | "admin-settings";
+export type View = "dashboard" | "upload-quote" | "new-quote" | "customers" | "quotes" | "pricing" | "intelligence" | "client-portals" | "admin-settings";
