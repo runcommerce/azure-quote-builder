@@ -1,10 +1,7 @@
 "use client";
-export const dynamic = "force-dynamic";
-
 import { useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { signOut } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import { DEFAULT_ADMIN, DEFAULT_API_CONFIG } from "@/lib/defaults";
 import type { AdminConfig, ApiConfig, ExtractedSpec } from "@/lib/types";
 import { buildPrompt, callExtractAPI, lookupMaterial, getJobDefaults, getDeliveryRule, generateItemDetails } from "@/lib/extract";
@@ -217,8 +214,7 @@ function getScoringRule(gsm: string | null | undefined, foldType: string | null 
 // ── Main App ──────────────────────────────────────────────────────────────
 function QuoteApp() {
   const { data: session, status: sessionStatus } = useSession();
-  const router = useRouter();
-  const [admin, setAdmin] = useState<AdminConfig>(DEFAULT_ADMIN);
+    const [admin, setAdmin] = useState<AdminConfig>(DEFAULT_ADMIN);
   const [apiConfig, setApiConfig] = useState<ApiConfig>(DEFAULT_API_CONFIG);
   const [showAdmin, setShowAdmin] = useState(false);
   const [file, setFile] = useState<File | null>(null);
@@ -321,7 +317,7 @@ function QuoteApp() {
               </div>
             )}
             {session?.user?.role === "admin" && (
-              <button onClick={() => router.push("/admin")} style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.7)", borderRadius: 8, padding: "8px 14px", cursor: "pointer", fontSize: 13, fontFamily: "Roboto, sans-serif" }}>
+              <button onClick={() => window.location.href = '/admin'} style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.7)", borderRadius: 8, padding: "8px 14px", cursor: "pointer", fontSize: 13, fontFamily: "Roboto, sans-serif" }}>
                 👥 Users
               </button>
             )}
