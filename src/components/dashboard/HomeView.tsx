@@ -31,7 +31,7 @@ export default function HomeView({ setView, recentQuotes }: { setView: (v: View)
       {/* ── Action bar — slim hero, everything above fold ── */}
       <div style={{
         background: "linear-gradient(135deg, #1a3a2e 0%, #122a21 100%)",
-        borderRadius: 12, padding: "18px 22px",
+        borderRadius: 12, padding: "15px 20px",
         display: "grid", gridTemplateColumns: "1fr auto",
         gap: 16, alignItems: "center",
         boxShadow: "0 4px 24px rgba(14,31,24,0.16)",
@@ -86,7 +86,7 @@ export default function HomeView({ setView, recentQuotes }: { setView: (v: View)
           { label: "Open Follow-ups", val: "0",  icon: "⏱" },
           { label: "Won This Month",  val: "€0", icon: "✓" },
         ].map(k => (
-          <div key={k.label} style={{ ...card, padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div key={k.label} style={{ ...card, padding: "10px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div>
               <div style={{ fontSize: 10, fontWeight: 700, color: "var(--az-muted)", textTransform: "uppercase", letterSpacing: "0.09em", marginBottom: 4 }}>{k.label}</div>
               <div style={{ fontSize: 22, fontWeight: 800, color: "var(--az-ink)", letterSpacing: "-0.03em" }}>{k.val}</div>
@@ -108,7 +108,7 @@ export default function HomeView({ setView, recentQuotes }: { setView: (v: View)
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7 }}>
             {PRODUCTS.map(p => (
               <button key={p.id} onClick={() => setView("new-quote")}
-                style={{ ...card, padding: "10px 12px", textAlign: "left", cursor: "pointer", display: "flex", alignItems: "center", gap: 9, transition: "border-color 0.12s" }}
+                style={{ ...card, padding: "9px 11px", textAlign: "left", cursor: "pointer", display: "flex", alignItems: "center", gap: 9, transition: "border-color 0.12s" }}
                 onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor = "#c8e63c"}
                 onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor = "rgba(26,58,46,0.09)"}>
                 <div style={{ width: 28, height: 28, borderRadius: 7, background: "linear-gradient(135deg, #1a3a2e, #2a5a46)", display: "flex", alignItems: "center", justifyContent: "center", color: "#c8e63c", fontSize: 12, flexShrink: 0 }}>
