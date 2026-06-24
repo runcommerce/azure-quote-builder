@@ -9,6 +9,7 @@ import { DEFAULT_ADMIN, DEFAULT_API_CONFIG } from "@/lib/defaults";
 import type { AdminConfig, ApiConfig, ExtractedSpec } from "@/lib/types";
 import { buildPrompt, callExtractAPI, lookupMaterial, getJobDefaults, getDeliveryRule, generateItemDetails } from "@/lib/extract";
 import AdminPanel from "@/components/AdminPanel";
+import ClientOnly from "@/components/ClientOnly";
 
 // ── Brand tokens ──────────────────────────────────────────────────────────
 const C = {
@@ -214,7 +215,7 @@ function getScoringRule(gsm: string | null | undefined, foldType: string | null 
 }
 
 // ── Main App ──────────────────────────────────────────────────────────────
-export default function Home() {
+function QuoteApp() {
   const { data: session, status: sessionStatus } = useSession();
   const router = useRouter();
   const [admin, setAdmin] = useState<AdminConfig>(DEFAULT_ADMIN);
@@ -544,4 +545,8 @@ export default function Home() {
       </main>
     </div>
   );
+}
+
+export default function Home() {
+  return <ClientOnly><QuoteApp /></ClientOnly>;
 }
