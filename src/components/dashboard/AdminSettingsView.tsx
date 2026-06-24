@@ -17,16 +17,16 @@ function loadConfig(): AdminConfig {
 
 // ── Shared input style ─────────────────────────────────────────────────────
 const inp = (width?: string): React.CSSProperties => ({
-  padding: "7px 10px", borderRadius: 6, border: `1px solid ${C.grey}`,
-  fontSize: 13, fontFamily: "Roboto, sans-serif", color: C.dark,
-  background: C.white, width: width || "100%", boxSizing: "border-box" as const,
+  padding: "7px 10px", borderRadius: 6, border: `1px solid ${"var(--az-line)"}`,
+  fontSize: 13, fontFamily: "Roboto, sans-serif", color: "var(--az-ink)",
+  background: "#ffffff", width: width || "100%", boxSizing: "border-box" as const,
 });
 
 // ── Toggle ─────────────────────────────────────────────────────────────────
 function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
   return (
-    <div onClick={() => onChange(!value)} style={{ width: 38, height: 21, borderRadius: 11, background: value ? C.navy : C.grey, cursor: "pointer", position: "relative", transition: "background 0.18s", flexShrink: 0 }}>
-      <div style={{ position: "absolute", top: 2.5, left: value ? 19 : 2.5, width: 16, height: 16, borderRadius: "50%", background: C.white, transition: "left 0.18s", boxShadow: "0 1px 3px rgba(0,0,0,0.2)" }} />
+    <div onClick={() => onChange(!value)} style={{ width: 38, height: 21, borderRadius: 11, background: value ? "var(--az-navy)" : "var(--az-line)", cursor: "pointer", position: "relative", transition: "background 0.18s", flexShrink: 0 }}>
+      <div style={{ position: "absolute", top: 2.5, left: value ? 19 : 2.5, width: 16, height: 16, borderRadius: "50%", background: "#ffffff", transition: "left 0.18s", boxShadow: "0 1px 3px rgba(0,0,0,0.2)" }} />
     </div>
   );
 }
@@ -37,17 +37,17 @@ function Section({ title, icon, desc, children, onAdd, addLabel }: {
   onAdd?: () => void; addLabel?: string;
 }) {
   return (
-    <div style={{ background: C.white, borderRadius: 12, border: `1px solid ${C.grey}`, overflow: "hidden", marginBottom: 16 }}>
-      <div style={{ background: C.navy, padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+    <div style={{ background: "#ffffff", borderRadius: 12, border: `1px solid ${"var(--az-line)"}`, overflow: "hidden", marginBottom: 16 }}>
+      <div style={{ background: "var(--az-navy)", padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <span style={{ fontSize: 16 }}>{icon}</span>
-            <span style={{ fontSize: 13, fontWeight: 700, color: C.white, textTransform: "uppercase" as const, letterSpacing: "0.08em" }}>{title}</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "#ffffff", textTransform: "uppercase" as const, letterSpacing: "0.08em" }}>{title}</span>
           </div>
           <div style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", marginTop: 3 }}>{desc}</div>
         </div>
         {onAdd && (
-          <button onClick={onAdd} style={{ padding: "6px 14px", borderRadius: 7, border: "1px solid rgba(255,255,255,0.25)", background: "rgba(255,255,255,0.1)", color: C.white, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "Roboto, sans-serif", display: "flex", alignItems: "center", gap: 5 }}>
+          <button onClick={onAdd} style={{ padding: "6px 14px", borderRadius: 7, border: "1px solid rgba(255,255,255,0.25)", background: "rgba(255,255,255,0.1)", color: "#ffffff", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "Roboto, sans-serif", display: "flex", alignItems: "center", gap: 5 }}>
             + {addLabel || "Add"}
           </button>
         )}
@@ -60,13 +60,13 @@ function Section({ title, icon, desc, children, onAdd, addLabel }: {
 // ── Delete button ──────────────────────────────────────────────────────────
 function DelBtn({ onClick }: { onClick: () => void }) {
   return (
-    <button onClick={onClick} title="Remove" style={{ padding: "5px 10px", borderRadius: 6, border: `1px solid ${C.redBorder}`, background: C.white, color: C.red, fontSize: 13, cursor: "pointer", flexShrink: 0 }}>✕</button>
+    <button onClick={onClick} title="Remove" style={{ padding: "5px 10px", borderRadius: 6, border: `1px solid ${"#fca5a5"}`, background: "#ffffff", color: "var(--az-red)", fontSize: 13, cursor: "pointer", flexShrink: 0 }}>✕</button>
   );
 }
 
 // ── Table header ───────────────────────────────────────────────────────────
 function TH({ children }: { children: string }) {
-  return <th style={{ padding: "8px 10px", textAlign: "left" as const, fontSize: 11, fontWeight: 700, color: C.muted, textTransform: "uppercase" as const, letterSpacing: "0.06em", background: C.offWhite, borderBottom: `1px solid ${C.grey}` }}>{children}</th>;
+  return <th style={{ padding: "8px 10px", textAlign: "left" as const, fontSize: 11, fontWeight: 700, color: "var(--az-muted)", textTransform: "uppercase" as const, letterSpacing: "0.06em", background: "var(--az-bg)", borderBottom: `1px solid ${"var(--az-line)"}` }}>{children}</th>;
 }
 
 // ── Main component ─────────────────────────────────────────────────────────
@@ -137,13 +137,13 @@ export default function AdminSettingsView() {
     const [newItem, setNewItem] = useState("");
     return (
       <div style={{ marginBottom: 16 }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: C.muted, textTransform: "uppercase" as const, letterSpacing: "0.06em", marginBottom: 8 }}>{label}</div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: "var(--az-muted)", textTransform: "uppercase" as const, letterSpacing: "0.06em", marginBottom: 8 }}>{label}</div>
         <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 6, marginBottom: 8 }}>
           {items.map((item, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 4, background: C.offWhite, border: `1px solid ${C.grey}`, borderRadius: 20, padding: "3px 4px 3px 10px" }}>
-              <span style={{ fontSize: 13, color: C.dark }}>{item}</span>
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 4, background: "var(--az-bg)", border: `1px solid ${"var(--az-line)"}`, borderRadius: 20, padding: "3px 4px 3px 10px" }}>
+              <span style={{ fontSize: 13, color: "var(--az-ink)" }}>{item}</span>
               <button onClick={() => setQFields(prev => ({ ...prev, [fieldKey]: items.filter((_, j) => j !== i) }))}
-                style={{ width: 18, height: 18, borderRadius: "50%", border: "none", background: C.greyMid, color: C.white, cursor: "pointer", fontSize: 11, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>✕</button>
+                style={{ width: 18, height: 18, borderRadius: "50%", border: "none", background: "rgba(16,32,51,0.18)", color: "#ffffff", cursor: "pointer", fontSize: 11, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>✕</button>
             </div>
           ))}
         </div>
@@ -153,7 +153,7 @@ export default function AdminSettingsView() {
             placeholder={`Add option…`}
             style={{ ...inp("200px") }} />
           <button onClick={() => { if (newItem.trim()) { setQFields(prev => ({ ...prev, [fieldKey]: [...items, newItem.trim()] })); setNewItem(""); }}}
-            style={{ padding: "7px 14px", borderRadius: 6, border: "none", background: C.navy, color: C.white, fontSize: 13, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
+            style={{ padding: "7px 14px", borderRadius: 6, border: "none", background: "var(--az-navy)", color: "#ffffff", fontSize: 13, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
             + Add
           </button>
         </div>
@@ -165,24 +165,24 @@ export default function AdminSettingsView() {
     <div style={{ padding: "28px 32px", maxWidth: 1000 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: C.dark }}>Admin Settings</h1>
-          <p style={{ margin: "4px 0 0", fontSize: 14, color: C.muted }}>Configure every aspect of the quote builder — edit, add and remove options line by line.</p>
+          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: "var(--az-ink)" }}>Admin Settings</h1>
+          <p style={{ margin: "4px 0 0", fontSize: 14, color: "var(--az-muted)" }}>Configure every aspect of the quote builder — edit, add and remove options line by line.</p>
         </div>
         {saved && (
-          <div style={{ padding: "8px 16px", borderRadius: 8, background: C.greenLight, border: `1px solid ${C.greenBorder}`, color: C.green, fontSize: 13, fontWeight: 600 }}>
+          <div style={{ padding: "8px 16px", borderRadius: 8, background: "var(--az-green-light)", border: `1px solid ${"#86efac"}`, color: "var(--az-green)", fontSize: 13, fontWeight: 600 }}>
             ✓ Saved
           </div>
         )}
       </div>
 
       {/* Tab bar */}
-      <div style={{ display: "flex", gap: 0, marginBottom: 20, background: C.white, borderRadius: 10, border: `1px solid ${C.grey}`, overflow: "hidden", flexWrap: "wrap" as const }}>
+      <div style={{ display: "flex", gap: 0, marginBottom: 20, background: "#ffffff", borderRadius: 10, border: `1px solid ${"var(--az-line)"}`, overflow: "hidden", flexWrap: "wrap" as const }}>
         {TABS.map(t => (
           <button key={t.id} onClick={() => setActiveTab(t.id)} style={{
             padding: "11px 16px", border: "none", background: "none", cursor: "pointer",
             fontSize: 13, fontWeight: activeTab === t.id ? 700 : 400,
-            color: activeTab === t.id ? C.navy : C.muted,
-            borderBottom: activeTab === t.id ? `2px solid ${C.navy}` : "2px solid transparent",
+            color: activeTab === t.id ? "var(--az-navy)" : "var(--az-muted)",
+            borderBottom: activeTab === t.id ? `2px solid ${"var(--az-navy)"}` : "2px solid transparent",
             fontFamily: "Roboto, sans-serif", display: "flex", alignItems: "center", gap: 6,
             whiteSpace: "nowrap" as const,
           }}>
@@ -197,11 +197,11 @@ export default function AdminSettingsView() {
           <Section title="AI Provider" icon="🤖" desc="Configure the LLM used for PDF extraction and quote intelligence">
             <div style={{ display: "grid", gap: 16 }}>
               <div>
-                <label style={{ fontSize: 12, fontWeight: 700, color: C.muted, display: "block", marginBottom: 6, textTransform: "uppercase" as const, letterSpacing: "0.05em" }}>Provider</label>
+                <label style={{ fontSize: 12, fontWeight: 700, color: "var(--az-muted)", display: "block", marginBottom: 6, textTransform: "uppercase" as const, letterSpacing: "0.05em" }}>Provider</label>
                 <div style={{ display: "flex", gap: 8 }}>
                   {["anthropic","openai","custom"].map(p => (
                     <button key={p} onClick={() => setApi(prev => ({ ...prev, provider: p as "anthropic"|"openai"|"custom" }))}
-                      style={{ padding: "8px 16px", borderRadius: 8, border: `1px solid ${api.provider === p ? C.navy : C.grey}`, background: api.provider === p ? "#E8F0EE" : C.white, color: api.provider === p ? C.navy : C.greyDark, fontWeight: api.provider === p ? 700 : 400, cursor: "pointer", fontSize: 13, fontFamily: "Roboto, sans-serif" }}>
+                      style={{ padding: "8px 16px", borderRadius: 8, border: `1px solid ${api.provider === p ? "var(--az-navy)" : "var(--az-line)"}`, background: api.provider === p ? "#E8F0EE" : "#ffffff", color: api.provider === p ? "var(--az-navy)" : "var(--az-muted)", fontWeight: api.provider === p ? 700 : 400, cursor: "pointer", fontSize: 13, fontFamily: "Roboto, sans-serif" }}>
                       {p === "anthropic" ? "Claude (Anthropic)" : p === "openai" ? "OpenAI" : "Custom"}
                     </button>
                   ))}
@@ -215,21 +215,21 @@ export default function AdminSettingsView() {
 
           <Section title="Usage & Spend Limit" icon="💶" desc="Protect against runaway costs — ~€0.006 per PDF extraction with Claude Sonnet">
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
-              <div style={{ background: C.offWhite, borderRadius: 8, padding: "16px", border: `1px solid ${C.grey}` }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: "uppercase" as const, marginBottom: 6 }}>Cost per extraction</div>
-                <div style={{ fontSize: 22, fontWeight: 800, color: C.dark }}>~€0.006</div>
-                <div style={{ fontSize: 12, color: C.muted, marginTop: 3 }}>~300 PDFs per €2</div>
+              <div style={{ background: "var(--az-bg)", borderRadius: 8, padding: "16px", border: `1px solid ${"var(--az-line)"}` }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--az-muted)", textTransform: "uppercase" as const, marginBottom: 6 }}>Cost per extraction</div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: "var(--az-ink)" }}>~€0.006</div>
+                <div style={{ fontSize: 12, color: "var(--az-muted)", marginTop: 3 }}>~300 PDFs per €2</div>
               </div>
-              <div style={{ background: C.offWhite, borderRadius: 8, padding: "16px", border: `1px solid ${C.grey}` }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: "uppercase" as const, marginBottom: 6 }}>Monthly cap (€60 ≈ €2/day)</div>
-                <div style={{ fontSize: 22, fontWeight: 800, color: C.dark }}>€60</div>
-                <div style={{ fontSize: 12, color: C.muted, marginTop: 3 }}>~10,000 extractions/month</div>
+              <div style={{ background: "var(--az-bg)", borderRadius: 8, padding: "16px", border: `1px solid ${"var(--az-line)"}` }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--az-muted)", textTransform: "uppercase" as const, marginBottom: 6 }}>Monthly cap (€60 ≈ €2/day)</div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: "var(--az-ink)" }}>€60</div>
+                <div style={{ fontSize: 12, color: "var(--az-muted)", marginTop: 3 }}>~10,000 extractions/month</div>
               </div>
             </div>
-            <div style={{ padding: "14px 16px", background: C.amberLight, borderRadius: 8, border: `1px solid ${C.amberBorder}`, fontSize: 13, color: C.amber, lineHeight: 1.6 }}>
+            <div style={{ padding: "14px 16px", background: "var(--az-amber-light)", borderRadius: 8, border: `1px solid ${"#fcd34d"}`, fontSize: 13, color: "var(--az-amber)", lineHeight: 1.6 }}>
               <strong>To set a €2/day limit:</strong> Go to <strong>console.anthropic.com → Settings → Limits</strong> and set a monthly spend limit of <strong>$65 (~€60)</strong>. This is enforced at the Anthropic API level — once hit, requests return a 429 error and the app shows a clear message to users.
               <div style={{ marginTop: 8 }}>
-                <a href="https://console.anthropic.com/settings/limits" target="_blank" rel="noreferrer" style={{ color: C.amber, fontWeight: 700 }}>→ Open Anthropic Console Limits ↗</a>
+                <a href="https://console.anthropic.com/settings/limits" target="_blank" rel="noreferrer" style={{ color: "var(--az-amber)", fontWeight: 700 }}>→ Open Anthropic Console Limits ↗</a>
               </div>
             </div>
           </Section>
@@ -244,7 +244,7 @@ export default function AdminSettingsView() {
             <thead><tr>{["Active","Name","Input Type","",""].map(h => <TH key={h}>{h}</TH>)}</tr></thead>
             <tbody>
               {admin.portalCustomers.map((c, i) => (
-                <tr key={c.id} style={{ borderBottom: `1px solid ${C.grey}` }}>
+                <tr key={c.id} style={{ borderBottom: `1px solid ${"var(--az-line)"}` }}>
                   <td style={{ padding: "10px 10px" }}><Toggle value={c.active} onChange={v => updCustomer(i, { active: v })} /></td>
                   <td style={{ padding: "10px 10px" }}>
                     <input value={c.name} onChange={e => updCustomer(i, { name: e.target.value })} style={inp("160px")} />
@@ -255,7 +255,7 @@ export default function AdminSettingsView() {
                     </select>
                   </td>
                   <td style={{ padding: "10px 10px" }}>
-                    <span style={{ fontSize: 12, color: C.muted, background: C.offWhite, padding: "3px 8px", borderRadius: 6 }}>
+                    <span style={{ fontSize: 12, color: "var(--az-muted)", background: "var(--az-bg)", padding: "3px 8px", borderRadius: 6 }}>
                       {c.inputType === "pdf" ? "📄 Portal spec PDF" : c.inputType === "email" ? "✉️ Email RFQ" : "🔌 API integration"}
                     </span>
                   </td>
@@ -271,13 +271,13 @@ export default function AdminSettingsView() {
       {activeTab === "jobtypes" && (
         <Section title="Job Type Defaults" icon="📋" desc="Default stock, sides and delivery per job type — Aaron to validate stock"
           onAdd={addJob} addLabel="Add job type">
-          <p style={{ fontSize: 13, color: C.muted, marginBottom: 12 }}>These defaults are applied when the AI matches a job type. Edit any field inline. Changes save immediately.</p>
+          <p style={{ fontSize: 13, color: "var(--az-muted)", marginBottom: 12 }}>These defaults are applied when the AI matches a job type. Edit any field inline. Changes save immediately.</p>
           <div style={{ overflowX: "auto" as const }}>
             <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 700 }}>
               <thead><tr>{["Active","Job Type","Default Stock","Sides","Delivery",""].map(h => <TH key={h}>{h}</TH>)}</tr></thead>
               <tbody>
                 {admin.jobTypeDefaults.map((j, i) => (
-                  <tr key={i} style={{ borderBottom: `1px solid ${C.grey}` }}>
+                  <tr key={i} style={{ borderBottom: `1px solid ${"var(--az-line)"}` }}>
                     <td style={{ padding: "8px 10px" }}><Toggle value={j.active} onChange={v => updJob(i, { active: v })} /></td>
                     <td style={{ padding: "8px 10px" }}>
                       <input value={j.jobType} onChange={e => updJob(i, { jobType: e.target.value })} style={inp("130px")} />
@@ -309,7 +309,7 @@ export default function AdminSettingsView() {
       {activeTab === "materials" && (
         <Section title="Material Lookup" icon="🗂" desc="Maps spec terms (e.g. '170gsm silk') to exact PrintLogic stock names"
           onAdd={addMat} addLabel="Add material">
-          <p style={{ fontSize: 13, color: C.muted, marginBottom: 12 }}>
+          <p style={{ fontSize: 13, color: "var(--az-muted)", marginBottom: 12 }}>
             Toggle <strong>Aaron ✓</strong> once a stock name is confirmed. Unconfirmed rows show a warning in the quote review screen.
           </p>
           <div style={{ overflowX: "auto" as const }}>
@@ -317,7 +317,7 @@ export default function AdminSettingsView() {
               <thead><tr>{["Spec Term","PrintLogic Stock Name","Aaron ✓",""].map(h => <TH key={h}>{h}</TH>)}</tr></thead>
               <tbody>
                 {admin.materialLookup.map((m, i) => (
-                  <tr key={i} style={{ borderBottom: `1px solid ${C.grey}`, background: m.confirmed ? C.white : "#FFFCF0" }}>
+                  <tr key={i} style={{ borderBottom: `1px solid ${"var(--az-line)"}`, background: m.confirmed ? "#ffffff" : "#FFFCF0" }}>
                     <td style={{ padding: "8px 10px" }}>
                       <input value={m.key} onChange={e => updMat(i, { key: e.target.value })} style={inp("140px")} />
                     </td>
@@ -341,19 +341,19 @@ export default function AdminSettingsView() {
         <Section title="Delivery Rules" icon="🚚" desc="Courier selection rules — activate Pallet/Truck once Aaron confirms triggers"
           onAdd={addDel} addLabel="Add rule">
           {admin.deliveryRules.map((r, i) => (
-            <div key={i} style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "14px 0", borderBottom: `1px solid ${C.grey}` }}>
+            <div key={i} style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "14px 0", borderBottom: `1px solid ${"var(--az-line)"}` }}>
               <Toggle value={r.active} onChange={v => updDel(i, { active: v })} />
               <div style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr 140px 90px", gap: 8 }}>
                 <div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: "uppercase" as const, marginBottom: 5 }}>Trigger Condition</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "var(--az-muted)", textTransform: "uppercase" as const, marginBottom: 5 }}>Trigger Condition</div>
                   <input value={r.condition} onChange={e => updDel(i, { condition: e.target.value })} style={inp()} />
                 </div>
                 <div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: "uppercase" as const, marginBottom: 5 }}>Courier</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "var(--az-muted)", textTransform: "uppercase" as const, marginBottom: 5 }}>Courier</div>
                   <input value={r.courier} onChange={e => updDel(i, { courier: e.target.value })} style={inp()} />
                 </div>
                 <div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: "uppercase" as const, marginBottom: 5 }}>Price</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "var(--az-muted)", textTransform: "uppercase" as const, marginBottom: 5 }}>Price</div>
                   <input value={r.price} onChange={e => updDel(i, { price: e.target.value })} style={inp()} />
                 </div>
               </div>
@@ -371,28 +371,28 @@ export default function AdminSettingsView() {
               { key: "day2Email",    label: "Day 2 — Automated follow-up email",    desc: "Personalised follow-up if no response after 2 days" },
               { key: "day5RepAlert", label: "Day 5 — Rep alert notification",       desc: "Notify account rep if still no response after 5 days" },
             ].map(({ key, label, desc }) => (
-              <div key={key} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 16px", background: C.offWhite, borderRadius: 8, border: `1px solid ${C.grey}` }}>
+              <div key={key} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 16px", background: "var(--az-bg)", borderRadius: 8, border: `1px solid ${"var(--az-line)"}` }}>
                 <div>
-                  <div style={{ fontWeight: 600, fontSize: 14, color: C.dark }}>{label}</div>
-                  <div style={{ fontSize: 13, color: C.muted, marginTop: 2 }}>{desc}</div>
+                  <div style={{ fontWeight: 600, fontSize: 14, color: "var(--az-ink)" }}>{label}</div>
+                  <div style={{ fontSize: 13, color: "var(--az-muted)", marginTop: 2 }}>{desc}</div>
                 </div>
                 <Toggle value={admin.followUp[key as "day2Email"|"day5RepAlert"]}
                   onChange={v => save({ ...admin, followUp: { ...admin.followUp, [key]: v } })} />
               </div>
             ))}
-            <div style={{ padding: "14px 16px", background: C.offWhite, borderRadius: 8, border: `1px solid ${C.grey}` }}>
-              <div style={{ fontWeight: 600, fontSize: 14, color: C.dark, marginBottom: 3 }}>High-value threshold (€)</div>
-              <div style={{ fontSize: 13, color: C.muted, marginBottom: 10 }}>Quotes above this value are flagged for a personal call instead of automated follow-up</div>
+            <div style={{ padding: "14px 16px", background: "var(--az-bg)", borderRadius: 8, border: `1px solid ${"var(--az-line)"}` }}>
+              <div style={{ fontWeight: 600, fontSize: 14, color: "var(--az-ink)", marginBottom: 3 }}>High-value threshold (€)</div>
+              <div style={{ fontSize: 13, color: "var(--az-muted)", marginBottom: 10 }}>Quotes above this value are flagged for a personal call instead of automated follow-up</div>
               <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                <span style={{ fontSize: 16, fontWeight: 700, color: C.muted }}>€</span>
+                <span style={{ fontSize: 16, fontWeight: 700, color: "var(--az-muted)" }}>€</span>
                 <input type="number" value={admin.followUp.highValueThreshold} onChange={e => save({ ...admin, followUp: { ...admin.followUp, highValueThreshold: Number(e.target.value) } })} style={{ ...inp("100px") }} />
               </div>
             </div>
-            <div style={{ padding: "14px 16px", background: C.offWhite, borderRadius: 8, border: `1px solid ${C.grey}` }}>
-              <div style={{ fontWeight: 600, fontSize: 14, color: C.dark, marginBottom: 3 }}>Default markup (%)</div>
+            <div style={{ padding: "14px 16px", background: "var(--az-bg)", borderRadius: 8, border: `1px solid ${"var(--az-line)"}` }}>
+              <div style={{ fontWeight: 600, fontSize: 14, color: "var(--az-ink)", marginBottom: 3 }}>Default markup (%)</div>
               <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                 <input type="number" value={admin.defaultMarkup} onChange={e => save({ ...admin, defaultMarkup: Number(e.target.value) })} style={{ ...inp("100px") }} />
-                <span style={{ fontSize: 13, color: C.muted }}>applied to all job types unless overridden</span>
+                <span style={{ fontSize: 13, color: "var(--az-muted)" }}>applied to all job types unless overridden</span>
               </div>
             </div>
           </div>
@@ -402,7 +402,7 @@ export default function AdminSettingsView() {
       {/* ── Quote Fields ──────────────────────────────────────────────────── */}
       {activeTab === "quotefields" && (
         <div>
-          <div style={{ background: C.amberLight, border: `1px solid ${C.amberBorder}`, borderRadius: 8, padding: "12px 16px", marginBottom: 16, fontSize: 13, color: C.amber }}>
+          <div style={{ background: "var(--az-amber-light)", border: `1px solid ${"#fcd34d"}`, borderRadius: 8, padding: "12px 16px", marginBottom: 16, fontSize: 13, color: "var(--az-amber)" }}>
             ⚠ Changes here update the dropdown options shown in the quote builder and upload form. Add new options, remove unused ones. Press Enter or click Add to save each item.
           </div>
 
@@ -461,21 +461,21 @@ export default function AdminSettingsView() {
                 { key: "imap_folder",label: "Folder to watch", placeholder: "INBOX",              type: "text" },
               ].map(f => (
                 <div key={f.key} style={{ display: "grid", gridTemplateColumns: "160px 1fr", gap: 12, alignItems: "center" }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: C.muted, textTransform: "uppercase" as const, letterSpacing: "0.05em" }}>{f.label}</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--az-muted)", textTransform: "uppercase" as const, letterSpacing: "0.05em" }}>{f.label}</div>
                   <input type={f.type} placeholder={f.placeholder}
-                    style={{ padding: "9px 12px", borderRadius: 8, border: "1px solid " + C.grey, fontSize: 14, fontFamily: "Roboto, sans-serif", color: C.dark, boxSizing: "border-box" as const }} />
+                    style={{ padding: "9px 12px", borderRadius: 8, border: "1px solid " + "var(--az-line)", fontSize: 14, fontFamily: "Roboto, sans-serif", color: "var(--az-ink)", boxSizing: "border-box" as const }} />
                 </div>
               ))}
               <div style={{ display: "grid", gridTemplateColumns: "160px 1fr", gap: 12, alignItems: "center" }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: C.muted, textTransform: "uppercase" as const, letterSpacing: "0.05em" }}>Auto-parse emails</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--az-muted)", textTransform: "uppercase" as const, letterSpacing: "0.05em" }}>Auto-parse emails</div>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <Toggle value={true} onChange={() => {}} />
-                  <span style={{ fontSize: 13, color: C.muted }}>Automatically extract quote fields from new emails</span>
+                  <span style={{ fontSize: 13, color: "var(--az-muted)" }}>Automatically extract quote fields from new emails</span>
                 </div>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "160px 1fr", gap: 12, alignItems: "center" }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: C.muted, textTransform: "uppercase" as const, letterSpacing: "0.05em" }}>Check interval</div>
-                <select style={{ padding: "9px 12px", borderRadius: 8, border: "1px solid " + C.grey, fontSize: 14, fontFamily: "Roboto, sans-serif" }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--az-muted)", textTransform: "uppercase" as const, letterSpacing: "0.05em" }}>Check interval</div>
+                <select style={{ padding: "9px 12px", borderRadius: 8, border: "1px solid " + "var(--az-line)", fontSize: 14, fontFamily: "Roboto, sans-serif" }}>
                   <option>Every 5 minutes</option>
                   <option>Every 15 minutes</option>
                   <option>Every 30 minutes</option>
@@ -484,10 +484,10 @@ export default function AdminSettingsView() {
               </div>
             </div>
             <div style={{ marginTop: 16, display: "flex", gap: 10 }}>
-              <button style={{ padding: "10px 20px", borderRadius: 8, border: "none", background: C.navy, color: C.white, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
+              <button style={{ padding: "10px 20px", borderRadius: 8, border: "none", background: "var(--az-navy)", color: "#ffffff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
                 Test connection
               </button>
-              <button style={{ padding: "10px 20px", borderRadius: 8, border: "1px solid " + C.grey, background: C.white, color: C.dark, fontSize: 13, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
+              <button style={{ padding: "10px 20px", borderRadius: 8, border: "1px solid " + "var(--az-line)", background: "#ffffff", color: "var(--az-ink)", fontSize: 13, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
                 Save settings
               </button>
             </div>
@@ -495,17 +495,17 @@ export default function AdminSettingsView() {
 
           <Section title="Auto-reply Settings" icon="📤" desc="Send an acknowledgement when a new quote request arrives by email">
             <div style={{ display: "grid", gap: 14 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 14px", background: C.offWhite, borderRadius: 8 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 14px", background: "var(--az-bg)", borderRadius: 8 }}>
                 <div>
-                  <div style={{ fontWeight: 600, fontSize: 14, color: C.dark }}>Send auto-acknowledgement</div>
-                  <div style={{ fontSize: 13, color: C.muted }}>Immediately reply confirming receipt within 8 hours</div>
+                  <div style={{ fontWeight: 600, fontSize: 14, color: "var(--az-ink)" }}>Send auto-acknowledgement</div>
+                  <div style={{ fontSize: 13, color: "var(--az-muted)" }}>Immediately reply confirming receipt within 8 hours</div>
                 </div>
                 <Toggle value={true} onChange={() => {}} />
               </div>
               <div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: C.muted, textTransform: "uppercase" as const, letterSpacing: "0.05em", marginBottom: 8 }}>Acknowledgement template</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--az-muted)", textTransform: "uppercase" as const, letterSpacing: "0.05em", marginBottom: 8 }}>Acknowledgement template</div>
                 <textarea rows={6} defaultValue={"Hi {{customer_name}},\n\nThank you for your quote request. We've received your enquiry and will have a full quote back to you within 8 business hours.\n\nIf you need anything urgently, please call us on 01 531 2695.\n\nKind regards,\nLisa Reid\nAzure Communications"}
-                  style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid " + C.grey, fontSize: 14, fontFamily: "Roboto, sans-serif", resize: "vertical" as const, boxSizing: "border-box" as const }} />
+                  style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid " + "var(--az-line)", fontSize: 14, fontFamily: "Roboto, sans-serif", resize: "vertical" as const, boxSizing: "border-box" as const }} />
               </div>
             </div>
           </Section>
@@ -513,13 +513,13 @@ export default function AdminSettingsView() {
       )}
 
       {/* User management link */}
-      <div style={{ marginTop: 8, padding: "14px 16px", background: C.white, borderRadius: 10, border: `1px solid ${C.grey}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div style={{ marginTop: 8, padding: "14px 16px", background: "#ffffff", borderRadius: 10, border: `1px solid ${"var(--az-line)"}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
-          <div style={{ fontSize: 14, fontWeight: 700, color: C.dark }}>👥 User Management</div>
-          <div style={{ fontSize: 13, color: C.muted }}>Add, remove and manage user roles and invite codes</div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--az-ink)" }}>👥 User Management</div>
+          <div style={{ fontSize: 13, color: "var(--az-muted)" }}>Add, remove and manage user roles and invite codes</div>
         </div>
         <button onClick={() => window.location.href = "/admin"}
-          style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: C.navy, color: C.white, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
+          style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "var(--az-navy)", color: "#ffffff", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
           Open →
         </button>
       </div>

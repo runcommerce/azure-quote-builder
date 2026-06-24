@@ -103,16 +103,16 @@ export default function UploadQuoteView() {
 
   const inp = (flagged: boolean): React.CSSProperties => ({
     width: "100%", padding: "9px 12px", borderRadius: 8, boxSizing: "border-box" as const,
-    border: `1.5px solid ${flagged ? C.amberBorder : C.grey}`,
-    background: flagged ? C.amberLight : C.white, fontSize: 14,
-    fontFamily: "Roboto, sans-serif", color: C.dark,
+    border: `1.5px solid ${flagged ? "#fcd34d" : "var(--az-line)"}`,
+    background: flagged ? "var(--az-amber-light)" : "#ffffff", fontSize: 14,
+    fontFamily: "Roboto, sans-serif", color: "var(--az-ink)",
   });
 
   return (
     <div style={{ padding: "28px 32px", maxWidth: 1200 }}>
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: C.dark }}>Upload RFQ Spec</h1>
-        <p style={{ margin: "4px 0 0", fontSize: 14, color: C.muted }}>Upload a portal PDF (HH Global, Custodian, Konica) — AI extracts all quote fields instantly.</p>
+        <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: "var(--az-ink)" }}>Upload RFQ Spec</h1>
+        <p style={{ margin: "4px 0 0", fontSize: 14, color: "var(--az-muted)" }}>Upload a portal PDF (HH Global, Custodian, Konica) — AI extracts all quote fields instantly.</p>
       </div>
 
       {/* Upload zone */}
@@ -123,21 +123,21 @@ export default function UploadQuoteView() {
             onDragOver={e => { e.preventDefault(); setDragOver(true); }}
             onDragLeave={() => setDragOver(false)}
             onClick={() => document.getElementById("pdf-upload")?.click()}
-            style={{ background: dragOver ? "#E8F4FA" : C.white, border: `2px dashed ${dragOver ? C.azure : C.grey}`, borderRadius: 12, padding: "48px 32px", textAlign: "center", cursor: "pointer", marginBottom: 16, transition: "all 0.15s" }}
+            style={{ background: dragOver ? "#E8F4FA" : "#ffffff", border: `2px dashed ${dragOver ? "var(--az-blue)" : "var(--az-line)"}`, borderRadius: 12, padding: "48px 32px", textAlign: "center", cursor: "pointer", marginBottom: 16, transition: "all 0.15s" }}
           >
             <input id="pdf-upload" type="file" accept="application/pdf" style={{ display: "none" }} onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
             <div style={{ fontSize: 40, marginBottom: 12 }}>📄</div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: C.dark, marginBottom: 6 }}>
+            <div style={{ fontSize: 18, fontWeight: 700, color: "var(--az-ink)", marginBottom: 6 }}>
               {file ? file.name : "Drop a spec PDF here or click to browse"}
             </div>
-            <div style={{ fontSize: 14, color: C.muted }}>
+            <div style={{ fontSize: 14, color: "var(--az-muted)" }}>
               {file ? `${(file.size / 1024).toFixed(0)} KB · click to change` : "HH Global · Custodian · Konica"}
             </div>
           </div>
-          {error && <div style={{ padding: "10px 16px", background: C.redLight, border: `1px solid ${C.redBorder}`, borderRadius: 8, color: C.red, fontSize: 14, marginBottom: 12 }}>{error}</div>}
+          {error && <div style={{ padding: "10px 16px", background: "var(--az-red-light)", border: `1px solid ${"#fca5a5"}`, borderRadius: 8, color: "var(--az-red)", fontSize: 14, marginBottom: 12 }}>{error}</div>}
           {file && (
             <button onClick={parseSpec}
-              style={{ width: "100%", padding: "14px 0", borderRadius: 10, border: "none", background: C.navy, color: C.white, fontSize: 16, fontWeight: 700, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
+              style={{ width: "100%", padding: "14px 0", borderRadius: 10, border: "none", background: "var(--az-navy)", color: "#ffffff", fontSize: 16, fontWeight: 700, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
               Extract quote fields →
             </button>
           )}
@@ -145,10 +145,10 @@ export default function UploadQuoteView() {
       )}
 
       {status === "loading" && (
-        <div style={{ background: C.white, borderRadius: 12, border: `1px solid ${C.grey}`, padding: "48px 32px", textAlign: "center" }}>
+        <div style={{ background: "#ffffff", borderRadius: 12, border: `1px solid ${"var(--az-line)"}`, padding: "48px 32px", textAlign: "center" }}>
           <div style={{ fontSize: 40, marginBottom: 12 }}>⚙️</div>
-          <div style={{ fontSize: 18, fontWeight: 700, color: C.dark, marginBottom: 6 }}>Reading spec…</div>
-          <div style={{ fontSize: 14, color: C.muted }}>Applying print industry rules to {file?.name}</div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: "var(--az-ink)", marginBottom: 6 }}>Reading spec…</div>
+          <div style={{ fontSize: 14, color: "var(--az-muted)" }}>Applying print industry rules to {file?.name}</div>
         </div>
       )}
 
@@ -158,15 +158,15 @@ export default function UploadQuoteView() {
           <div>
             {/* Flags */}
             {flags.length > 0 && (
-              <div style={{ background: C.amberLight, border: `1px solid ${C.amberBorder}`, borderRadius: 8, padding: "12px 16px", marginBottom: 16 }}>
-                <div style={{ fontWeight: 700, fontSize: 14, color: C.amber, marginBottom: 6 }}>⚠ Review these fields before approving</div>
-                {flags.map((f, i) => <div key={i} style={{ fontSize: 13, color: C.amber, paddingLeft: 10 }}>· {f}</div>)}
+              <div style={{ background: "var(--az-amber-light)", border: `1px solid ${"#fcd34d"}`, borderRadius: 8, padding: "12px 16px", marginBottom: 16 }}>
+                <div style={{ fontWeight: 700, fontSize: 14, color: "var(--az-amber)", marginBottom: 6 }}>⚠ Review these fields before approving</div>
+                {flags.map((f, i) => <div key={i} style={{ fontSize: 13, color: "var(--az-amber)", paddingLeft: 10 }}>· {f}</div>)}
               </div>
             )}
 
             {/* PrintLogic match */}
-            <div style={{ background: C.white, borderRadius: 12, border: `1px solid ${C.grey}`, padding: "16px 20px", marginBottom: 16 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: C.navy, marginBottom: 12, display: "flex", gap: 6 }}>🎯 PrintLogic Auto-Match</div>
+            <div style={{ background: "#ffffff", borderRadius: 12, border: `1px solid ${"var(--az-line)"}`, padding: "16px 20px", marginBottom: 16 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--az-navy)", marginBottom: 12, display: "flex", gap: 6 }}>🎯 PrintLogic Auto-Match</div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
                 {[
                   ["Stock", plMaterial ? plMaterial.printlogic + (plMaterial.confirmed ? "" : " ⚠") : "No match — select manually"],
@@ -174,13 +174,13 @@ export default function UploadQuoteView() {
                   ["Job Type", jobDefaults ? `✓ ${jobDefaults.jobType}` : "—"],
                 ].map(([l, v]) => (
                   <div key={l}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: "uppercase" as const, letterSpacing: "0.06em", marginBottom: 4 }}>{l}</div>
-                    <div style={{ fontSize: 13, color: C.dark, lineHeight: 1.4 }}>{v}</div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "var(--az-muted)", textTransform: "uppercase" as const, letterSpacing: "0.06em", marginBottom: 4 }}>{l}</div>
+                    <div style={{ fontSize: 13, color: "var(--az-ink)", lineHeight: 1.4 }}>{v}</div>
                   </div>
                 ))}
               </div>
               {scoringRule && (
-                <div style={{ marginTop: 12, padding: "8px 12px", background: C.amberLight, border: `1px solid ${C.amberBorder}`, borderRadius: 7, fontSize: 13, color: C.amber }}>
+                <div style={{ marginTop: 12, padding: "8px 12px", background: "var(--az-amber-light)", border: `1px solid ${"#fcd34d"}`, borderRadius: 7, fontSize: 13, color: "var(--az-amber)" }}>
                   ⚠️ <strong>Scoring:</strong> {scoringRule}
                 </div>
               )}
@@ -188,10 +188,10 @@ export default function UploadQuoteView() {
 
             {/* Field groups */}
             {GROUPS.map(group => (
-              <div key={group.title} style={{ background: C.white, borderRadius: 12, border: `1px solid ${C.grey}`, overflow: "hidden", marginBottom: 12 }}>
-                <div style={{ background: C.navy, padding: "12px 18px", display: "flex", gap: 8, alignItems: "center" }}>
+              <div key={group.title} style={{ background: "#ffffff", borderRadius: 12, border: `1px solid ${"var(--az-line)"}`, overflow: "hidden", marginBottom: 12 }}>
+                <div style={{ background: "var(--az-navy)", padding: "12px 18px", display: "flex", gap: 8, alignItems: "center" }}>
                   <span>{group.icon}</span>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: C.white, textTransform: "uppercase" as const, letterSpacing: "0.08em" }}>{group.title}</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: "#ffffff", textTransform: "uppercase" as const, letterSpacing: "0.08em" }}>{group.title}</span>
                 </div>
                 <div style={{ padding: "16px 18px", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px,1fr))", gap: 12 }}>
                   {group.fields.map(f => {
@@ -199,7 +199,7 @@ export default function UploadQuoteView() {
                     const val = g(f.key);
                     return (
                       <div key={f.key}>
-                        <label style={{ fontSize: 12, fontWeight: 600, color: flagged ? C.amber : C.muted, display: "block", marginBottom: 5, textTransform: "uppercase" as const, letterSpacing: "0.05em" }}>
+                        <label style={{ fontSize: 12, fontWeight: 600, color: flagged ? "var(--az-amber)" : "var(--az-muted)", display: "block", marginBottom: 5, textTransform: "uppercase" as const, letterSpacing: "0.05em" }}>
                           {f.label} {flagged && "⚠"}
                         </label>
                         {"options" in f ? (
@@ -220,24 +220,24 @@ export default function UploadQuoteView() {
             {/* Actions */}
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 4 }}>
               <button onClick={() => { setFile(null); setSpec(null); setStatus("idle"); setError(null); }}
-                style={{ padding: "12px 20px", borderRadius: 10, border: `1.5px solid ${C.grey}`, background: C.white, color: C.greyDark, fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
+                style={{ padding: "12px 20px", borderRadius: 10, border: `1.5px solid ${"var(--az-line)"}`, background: "#ffffff", color: "var(--az-muted)", fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
                 ← New spec
               </button>
               <button onClick={() => navigator.clipboard.writeText(JSON.stringify(spec, null, 2))}
-                style={{ padding: "12px 20px", borderRadius: 10, border: `1.5px solid ${C.grey}`, background: C.white, color: C.greyDark, fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
+                style={{ padding: "12px 20px", borderRadius: 10, border: `1.5px solid ${"var(--az-line)"}`, background: "#ffffff", color: "var(--az-muted)", fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
                 Export JSON
               </button>
               {status === "done" && (
                 <button onClick={() => setStatus("approved")}
-                  style={{ flex: 1, minWidth: 200, padding: "12px 20px", borderRadius: 10, border: "none", background: C.navy, color: C.white, fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
+                  style={{ flex: 1, minWidth: 200, padding: "12px 20px", borderRadius: 10, border: "none", background: "var(--az-navy)", color: "#ffffff", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
                   ✓ Approve — Ready for PrintLogic
                 </button>
               )}
             </div>
 
             {status === "approved" && (
-              <div style={{ background: C.white, border: `1.5px solid ${C.greenBorder}`, borderRadius: 12, padding: "20px", marginTop: 16 }}>
-                <div style={{ fontWeight: 700, color: C.navy, marginBottom: 12, fontSize: 16 }}>✅ Approved — PrintLogic Steps</div>
+              <div style={{ background: "#ffffff", border: `1.5px solid ${"#86efac"}`, borderRadius: 12, padding: "20px", marginTop: 16 }}>
+                <div style={{ fontWeight: 700, color: "var(--az-navy)", marginBottom: 12, fontSize: 16 }}>✅ Approved — PrintLogic Steps</div>
                 {[
                   `Find customer: ${g("customer_name") || "[check email]"}`,
                   `Create Costed Quote → Job type: ${g("product_type") || "[confirm]"}`,
@@ -247,8 +247,8 @@ export default function UploadQuoteView() {
                   `Delivery: ${deliveryRule ? `${deliveryRule.courier} (${deliveryRule.price})` : "[confirm]"}`,
                   `Paste item details (right panel) → Calculate → Review margin → Send`,
                 ].map((s, i) => (
-                  <div key={i} style={{ display: "flex", gap: 10, padding: "7px 0", borderBottom: i < 6 ? `1px solid ${C.grey}` : "none", fontSize: 14 }}>
-                    <span style={{ color: C.azure, fontWeight: 700, minWidth: 22 }}>{i + 1}.</span><span>{s}</span>
+                  <div key={i} style={{ display: "flex", gap: 10, padding: "7px 0", borderBottom: i < 6 ? `1px solid ${"var(--az-line)"}` : "none", fontSize: 14 }}>
+                    <span style={{ color: "var(--az-blue)", fontWeight: 700, minWidth: 22 }}>{i + 1}.</span><span>{s}</span>
                   </div>
                 ))}
               </div>
@@ -258,13 +258,13 @@ export default function UploadQuoteView() {
           {/* Right: live preview */}
           <div style={{ position: "sticky", top: 20 }}>
             <div style={{ background: "#0a1a10", borderRadius: 12, overflow: "hidden", marginBottom: 14 }}>
-              <div style={{ background: C.navy, padding: "14px 18px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ background: "var(--az-navy)", padding: "14px 18px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: C.lime, textTransform: "uppercase" as const, letterSpacing: "0.08em" }}>🖨 PrintLogic Item Details</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--az-green)", textTransform: "uppercase" as const, letterSpacing: "0.08em" }}>🖨 PrintLogic Item Details</div>
                   <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 2 }}>Live · updates as you edit</div>
                 </div>
                 <button onClick={() => { navigator.clipboard.writeText(itemDetails); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
-                  style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", color: C.white, borderRadius: 7, padding: "6px 14px", cursor: "pointer", fontSize: 12, fontWeight: 600, fontFamily: "Roboto, sans-serif" }}>
+                  style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", color: "#ffffff", borderRadius: 7, padding: "6px 14px", cursor: "pointer", fontSize: 12, fontWeight: 600, fontFamily: "Roboto, sans-serif" }}>
                   {copied ? "✓ Copied" : "Copy"}
                 </button>
               </div>
@@ -274,8 +274,8 @@ export default function UploadQuoteView() {
             </div>
 
             {/* Summary */}
-            <div style={{ background: C.white, borderRadius: 12, border: `1px solid ${C.grey}`, padding: "16px 18px" }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: C.navy, marginBottom: 12 }}>Quick summary</div>
+            <div style={{ background: "#ffffff", borderRadius: 12, border: `1px solid ${"var(--az-line)"}`, padding: "16px 18px" }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--az-navy)", marginBottom: 12 }}>Quick summary</div>
               {[
                 ["Customer",  g("customer_name")],
                 ["Product",   g("product_type")],
@@ -285,9 +285,9 @@ export default function UploadQuoteView() {
                 ["Stock",     g("substrate_weight_gsm") && g("substrate_type") ? `${g("substrate_weight_gsm")}gsm ${g("substrate_type")}` : ""],
                 ["Finish",    g("coating_side_1")],
               ].map(([l, v]) => (
-                <div key={l} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: `1px solid ${C.grey}`, fontSize: 13 }}>
-                  <span style={{ color: C.muted, fontWeight: 500 }}>{l}</span>
-                  <span style={{ color: v ? C.dark : C.greyMid, fontWeight: v ? 600 : 400 }}>{v || "—"}</span>
+                <div key={l} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: `1px solid ${"var(--az-line)"}`, fontSize: 13 }}>
+                  <span style={{ color: "var(--az-muted)", fontWeight: 500 }}>{l}</span>
+                  <span style={{ color: v ? "var(--az-ink)" : "rgba(16,32,51,0.18)", fontWeight: v ? 600 : 400 }}>{v || "—"}</span>
                 </div>
               ))}
             </div>

@@ -1,21 +1,18 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Suspense } from "react";
 import AuthLayout from "@/components/AuthLayout";
-import { B } from "@/lib/types";
 
 const inp: React.CSSProperties = {
-  width: "100%", padding: "11px 14px", borderRadius: 8, boxSizing: "border-box",
-  border: `1.5px solid ${B.grey}`, fontSize: 14, fontFamily: "Roboto, sans-serif",
-  color: B.dark, outline: "none", transition: "border-color 0.15s",
-  background: B.white,
+  width: "100%", padding: "10px 13px", borderRadius: 8, boxSizing: "border-box" as const,
+  border: "1.5px solid var(--az-line)", fontSize: 14, color: "var(--az-ink)",
+  outline: "none", background: "var(--az-bg)", fontFamily: "var(--az-font)",
 };
 const lbl: React.CSSProperties = {
-  fontSize: 12, fontWeight: 700, color: B.muted, display: "block",
-  marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em",
+  fontSize: 12, fontWeight: 700, color: "var(--az-muted)", display: "block",
+  marginBottom: 5, textTransform: "uppercase" as const, letterSpacing: "0.06em",
 };
 
 function LoginForm() {
@@ -29,16 +26,14 @@ function LoginForm() {
 
   useEffect(() => {
     if (params.get("registered")) setInfo("Account created — you can sign in now.");
-    if (params.get("reset")) setInfo("Password updated — please sign in with your new password.");
+    if (params.get("reset")) setInfo("Password updated — please sign in.");
   }, [params]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true); setError(""); setInfo("");
     const result = await signIn("credentials", {
-      email: form.email.trim().toLowerCase(),
-      password: form.password,
-      redirect: false,
+      email: form.email.trim().toLowerCase(), password: form.password, redirect: false,
     });
     setLoading(false);
     if (result?.error) { setError("Incorrect email or password."); return; }
@@ -46,68 +41,50 @@ function LoginForm() {
   };
 
   return (
-    <AuthLayout title="Welcome back" subtitle="Sign in to your Azure Quote Builder account">
+    <AuthLayout title="Welcome back" subtitle="Sign in to Azure IQ · Quote Builder">
       <form onSubmit={handleSubmit} noValidate>
         {info && (
-          <div style={{ background: "#E9F5F0", border: "1px solid #9FE1CB", borderRadius: 8, padding: "10px 14px", fontSize: 13, color: B.green, marginBottom: 20, display: "flex", gap: 8 }}>
-            <span>✓</span><span>{info}</span>
+          <div style={{ background: "var(--az-green-light)", border: "1px solid #86efac", borderRadius: 8, padding: "9px 13px", fontSize: 13, color: "var(--az-green)", marginBottom: 18 }}>
+            ✓ {info}
           </div>
         )}
         {error && (
-          <div style={{ background: B.redLight, border: `1px solid ${B.red}`, borderRadius: 8, padding: "10px 14px", fontSize: 13, color: B.red, marginBottom: 20, display: "flex", gap: 8 }}>
-            <span>⚠</span><span>{error}</span>
+          <div style={{ background: "var(--az-red-light)", border: "1px solid #fca5a5", borderRadius: 8, padding: "9px 13px", fontSize: 13, color: "var(--az-red)", marginBottom: 18 }}>
+            {error}
           </div>
         )}
-
-        <div style={{ marginBottom: 16 }}>
+        <div style={{ marginBottom: 14 }}>
           <label style={lbl}>Email address</label>
           <input type="email" required autoComplete="email" style={inp}
             value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
             placeholder="you@azurecomm.ie" />
         </div>
-
-        <div style={{ marginBottom: 8 }}>
+        <div style={{ marginBottom: 6 }}>
           <label style={lbl}>Password</label>
           <div style={{ position: "relative" }}>
             <input type={showPw ? "text" : "password"} required autoComplete="current-password"
-              style={{ ...inp, paddingRight: 44 }}
+              style={{ ...inp, paddingRight: 40 }}
               value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
               placeholder="••••••••" />
             <button type="button" onClick={() => setShowPw(v => !v)}
-              style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: B.muted, fontSize: 16, padding: 0 }}>
-              {showPw ? "🙈" : "👁"}
+              style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--az-muted)", fontSize: 15, padding: 0 }}>
+              {showPw ? "○" : "●"}
             </button>
           </div>
         </div>
-
-        <div style={{ textAlign: "right", marginBottom: 24 }}>
-          <Link href="/forgot-password" style={{ fontSize: 13, color: B.azure, textDecoration: "none", fontWeight: 500 }}>
-            Forgot password?
-          </Link>
+        <div style={{ textAlign: "right", marginBottom: 20 }}>
+          <Link href="/forgot-password" style={{ fontSize: 13, color: "var(--az-blue)", fontWeight: 600 }}>Forgot password?</Link>
         </div>
-
         <button type="submit" disabled={loading || !form.email || !form.password}
-          style={{
-            width: "100%", padding: "13px 0", borderRadius: 8, border: "none",
-            background: loading || !form.email || !form.password ? B.grey : B.navy,
-            color: loading || !form.email || !form.password ? B.muted : B.white,
-            fontSize: 15, fontWeight: 700, cursor: loading || !form.email || !form.password ? "not-allowed" : "pointer",
-            fontFamily: "Roboto, sans-serif", transition: "background 0.15s",
-          }}>
+          style={{ width: "100%", padding: "12px 0", borderRadius: 999, border: "none", background: (!form.email || !form.password || loading) ? "var(--az-line)" : "linear-gradient(135deg, var(--az-blue), var(--az-blue-dark))", color: (!form.email || !form.password || loading) ? "var(--az-muted)" : "#fff", fontSize: 14, fontWeight: 700, cursor: (!form.email || !form.password || loading) ? "not-allowed" : "pointer", fontFamily: "var(--az-font)", boxShadow: (!form.email || !form.password || loading) ? "none" : "0 6px 20px rgba(20,153,214,0.3)" }}>
           {loading ? "Signing in…" : "Sign in"}
         </button>
-
-        <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "24px 0" }}>
-          <div style={{ flex: 1, height: 1, background: B.grey }} />
-          <span style={{ fontSize: 12, color: B.muted }}>New to the platform?</span>
-          <div style={{ flex: 1, height: 1, background: B.grey }} />
+        <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "20px 0" }}>
+          <div style={{ flex: 1, height: 1, background: "var(--az-line)" }} />
+          <span style={{ fontSize: 12, color: "var(--az-muted)" }}>New to the platform?</span>
+          <div style={{ flex: 1, height: 1, background: "var(--az-line)" }} />
         </div>
-
-        <Link href="/signup" style={{
-          display: "block", textAlign: "center", padding: "11px 0", borderRadius: 8,
-          border: `1.5px solid ${B.navy}`, color: B.navy, fontWeight: 700, fontSize: 14,
-          textDecoration: "none", transition: "background 0.15s",
-        }}>
+        <Link href="/signup" style={{ display: "block", textAlign: "center", padding: "11px 0", borderRadius: 999, border: "1.5px solid var(--az-line)", color: "var(--az-ink)", fontWeight: 700, fontSize: 14, textDecoration: "none" }}>
           Create an account
         </Link>
       </form>

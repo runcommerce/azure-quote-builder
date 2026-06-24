@@ -2,14 +2,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import AuthLayout from "@/components/AuthLayout";
-import { B } from "@/lib/types";
 
 const inp: React.CSSProperties = {
   width: "100%", padding: "11px 14px", borderRadius: 8, boxSizing: "border-box",
-  border: `1.5px solid ${B.grey}`, fontSize: 14, fontFamily: "Roboto, sans-serif", color: B.dark,
+  border: `1.5px solid ${"var(--az-line)"}`, fontSize: 14, fontFamily: "var(--az-font)", color: "var(--az-ink)",
 };
 const lbl: React.CSSProperties = {
-  fontSize: 12, fontWeight: 700, color: B.muted, display: "block",
+  fontSize: 12, fontWeight: 700, color: "var(--az-muted)", display: "block",
   marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em",
 };
 
@@ -43,18 +42,18 @@ export default function ForgotPasswordPage() {
         <div style={{ width: 72, height: 72, borderRadius: "50%", background: "#E9F5F0", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontSize: 32 }}>
           📧
         </div>
-        <p style={{ fontSize: 15, color: B.greyDark, lineHeight: 1.7, marginBottom: 8 }}>
+        <p style={{ fontSize: 15, color: "var(--az-muted)", lineHeight: 1.7, marginBottom: 8 }}>
           If an account exists for <strong>{email}</strong>, you&apos;ll receive a reset link within a few minutes.
         </p>
-        <p style={{ fontSize: 13, color: B.muted, marginBottom: 28 }}>
+        <p style={{ fontSize: 13, color: "var(--az-muted)", marginBottom: 28 }}>
           Check your spam folder if you don&apos;t see it.
         </p>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <button onClick={() => { setSent(false); setEmail(""); }}
-            style={{ padding: "11px 0", borderRadius: 8, border: `1.5px solid ${B.grey}`, background: B.white, color: B.dark, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "Roboto, sans-serif" }}>
+            style={{ padding: "11px 0", borderRadius: 8, border: `1.5px solid ${"var(--az-line)"}`, background: "#ffffff", color: "var(--az-ink)", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "var(--az-font)" }}>
             Try a different email
           </button>
-          <Link href="/login" style={{ display: "block", padding: "11px 0", borderRadius: 8, border: "none", background: B.navy, color: B.white, fontSize: 14, fontWeight: 700, textDecoration: "none", textAlign: "center", fontFamily: "Roboto, sans-serif" }}>
+          <Link href="/login" style={{ display: "block", padding: "11px 0", borderRadius: 8, border: "none", background: "var(--az-navy)", color: "#ffffff", fontSize: 14, fontWeight: 700, textDecoration: "none", textAlign: "center", fontFamily: "var(--az-font)" }}>
             Back to sign in
           </Link>
         </div>
@@ -66,7 +65,7 @@ export default function ForgotPasswordPage() {
     <AuthLayout title="Forgot your password?" subtitle="Enter your email and we'll send a reset link">
       <form onSubmit={handleSubmit} noValidate>
         {error && (
-          <div style={{ background: B.redLight, border: `1px solid ${B.red}`, borderRadius: 8, padding: "10px 14px", fontSize: 13, color: B.red, marginBottom: 20 }}>
+          <div style={{ background: "var(--az-red-light)", border: `1px solid ${"var(--az-red)"}`, borderRadius: 8, padding: "10px 14px", fontSize: 13, color: "var(--az-red)", marginBottom: 20 }}>
             {error}
           </div>
         )}
@@ -79,15 +78,15 @@ export default function ForgotPasswordPage() {
         <button type="submit" disabled={loading || !email}
           style={{
             width: "100%", padding: "13px 0", borderRadius: 8, border: "none",
-            background: loading || !email ? B.grey : B.navy,
-            color: loading || !email ? B.muted : B.white,
+            background: loading || !email ? "var(--az-line)" : "var(--az-navy)",
+            color: loading || !email ? "var(--az-muted)" : "#ffffff",
             fontSize: 15, fontWeight: 700, cursor: loading || !email ? "not-allowed" : "pointer",
-            fontFamily: "Roboto, sans-serif",
+            fontFamily: "var(--az-font)",
           }}>
           {loading ? "Sending…" : "Send reset link"}
         </button>
-        <p style={{ textAlign: "center", marginTop: 20, fontSize: 14, color: B.muted }}>
-          <Link href="/login" style={{ color: B.azure, fontWeight: 700, textDecoration: "none" }}>← Back to sign in</Link>
+        <p style={{ textAlign: "center", marginTop: 20, fontSize: 14, color: "var(--az-muted)" }}>
+          <Link href="/login" style={{ color: "var(--az-blue)", fontWeight: 700, textDecoration: "none" }}>← Back to sign in</Link>
         </p>
       </form>
     </AuthLayout>

@@ -3,15 +3,14 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import AuthLayout from "@/components/AuthLayout";
-import { B } from "@/lib/types";
 
 const inp: React.CSSProperties = {
   width: "100%", padding: "11px 14px", borderRadius: 8, boxSizing: "border-box",
-  border: `1.5px solid ${B.grey}`, fontSize: 14, fontFamily: "Roboto, sans-serif",
-  color: B.dark, outline: "none",
+  border: `1.5px solid ${"var(--az-line)"}`, fontSize: 14, fontFamily: "var(--az-font)",
+  color: "var(--az-ink)", outline: "none",
 };
 const lbl: React.CSSProperties = {
-  fontSize: 12, fontWeight: 700, color: B.muted, display: "block",
+  fontSize: 12, fontWeight: 700, color: "var(--az-muted)", display: "block",
   marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em",
 };
 
@@ -25,7 +24,7 @@ function PasswordStrength({ password }: { password: string }) {
   return (
     <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
       {checks.map(c => (
-        <span key={c.label} style={{ fontSize: 11, color: c.ok ? B.green : B.muted, display: "flex", gap: 4, alignItems: "center" }}>
+        <span key={c.label} style={{ fontSize: 11, color: c.ok ? "var(--az-green)" : "var(--az-muted)", display: "flex", gap: 4, alignItems: "center" }}>
           <span>{c.ok ? "✓" : "○"}</span>{c.label}
         </span>
       ))}
@@ -69,7 +68,7 @@ export default function SignupPage() {
     <AuthLayout title="Create your account" subtitle="You'll need an invite code from your administrator">
       <form onSubmit={handleSubmit} noValidate>
         {error && (
-          <div style={{ background: B.redLight, border: `1px solid ${B.red}`, borderRadius: 8, padding: "10px 14px", fontSize: 13, color: B.red, marginBottom: 20, display: "flex", gap: 8 }}>
+          <div style={{ background: "var(--az-red-light)", border: `1px solid ${"var(--az-red)"}`, borderRadius: 8, padding: "10px 14px", fontSize: 13, color: "var(--az-red)", marginBottom: 20, display: "flex", gap: 8 }}>
             <span>⚠</span><span>{error}</span>
           </div>
         )}
@@ -92,7 +91,7 @@ export default function SignupPage() {
                 style={{ ...inp, paddingRight: 44 }}
                 value={form.password} onChange={set("password")} placeholder="Min. 8 characters" />
               <button type="button" onClick={() => setShowPw(v => !v)}
-                style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: B.muted, fontSize: 16, padding: 0 }}>
+                style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--az-muted)", fontSize: 16, padding: 0 }}>
                 {showPw ? "🙈" : "👁"}
               </button>
             </div>
@@ -102,19 +101,19 @@ export default function SignupPage() {
             <label style={lbl}>Confirm password</label>
             <input type="password" required autoComplete="new-password" style={{
               ...inp,
-              borderColor: form.confirm && form.confirm !== form.password ? B.red : B.grey,
+              borderColor: form.confirm && form.confirm !== form.password ? "var(--az-red)" : "var(--az-line)",
             }}
               value={form.confirm} onChange={set("confirm")} placeholder="Re-enter password" />
             {form.confirm && form.confirm !== form.password && (
-              <p style={{ fontSize: 12, color: B.red, marginTop: 4 }}>Passwords do not match</p>
+              <p style={{ fontSize: 12, color: "var(--az-red)", marginTop: 4 }}>Passwords do not match</p>
             )}
           </div>
           <div>
             <label style={lbl}>Invite code</label>
             <input type="text" required autoComplete="off" style={inp}
               value={form.inviteCode} onChange={set("inviteCode")} placeholder="Provided by your admin" />
-            <p style={{ fontSize: 12, color: B.muted, marginTop: 4 }}>
-              Don&apos;t have one? <Link href="mailto:eamonn@standfast.partners" style={{ color: B.azure }}>Contact Standfast</Link>
+            <p style={{ fontSize: 12, color: "var(--az-muted)", marginTop: 4 }}>
+              Don&apos;t have one? <Link href="mailto:eamonn@standfast.partners" style={{ color: "var(--az-blue)" }}>Contact Standfast</Link>
             </p>
           </div>
         </div>
@@ -122,17 +121,17 @@ export default function SignupPage() {
         <button type="submit" disabled={loading}
           style={{
             width: "100%", padding: "13px 0", borderRadius: 8, border: "none",
-            background: loading ? B.grey : B.navy,
-            color: loading ? B.muted : B.white,
+            background: loading ? "var(--az-line)" : "var(--az-navy)",
+            color: loading ? "var(--az-muted)" : "#ffffff",
             fontSize: 15, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer",
-            fontFamily: "Roboto, sans-serif",
+            fontFamily: "var(--az-font)",
           }}>
           {loading ? "Creating account…" : "Create account"}
         </button>
 
-        <p style={{ textAlign: "center", marginTop: 20, fontSize: 14, color: B.muted }}>
+        <p style={{ textAlign: "center", marginTop: 20, fontSize: 14, color: "var(--az-muted)" }}>
           Already have an account?{" "}
-          <Link href="/login" style={{ color: B.azure, fontWeight: 700, textDecoration: "none" }}>Sign in</Link>
+          <Link href="/login" style={{ color: "var(--az-blue)", fontWeight: 700, textDecoration: "none" }}>Sign in</Link>
         </p>
       </form>
     </AuthLayout>

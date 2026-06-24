@@ -1,7 +1,6 @@
 "use client";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { B } from "@/lib/types";
 
 export default function Header({ onAdminClick }: { onAdminClick: () => void }) {
   const { data: session } = useSession();
@@ -9,7 +8,7 @@ export default function Header({ onAdminClick }: { onAdminClick: () => void }) {
   const isAdmin = session?.user?.role === "admin";
 
   return (
-    <header style={{ background: B.navy, padding: "0 28px", boxShadow: "0 2px 12px rgba(0,0,0,0.3)", position: "sticky", top: 0, zIndex: 100 }}>
+    <header style={{ background: "var(--az-navy)", padding: "0 28px", boxShadow: "0 2px 12px rgba(0,0,0,0.3)", position: "sticky", top: 0, zIndex: 100 }}>
       <div style={{ maxWidth: 1300, margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", height: 64 }}>
 
         {/* Wordmark logo */}
@@ -39,16 +38,16 @@ export default function Header({ onAdminClick }: { onAdminClick: () => void }) {
           )}
           {isAdmin && (
             <button onClick={() => router.push("/admin")}
-              style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.7)", borderRadius: 8, padding: "7px 13px", cursor: "pointer", fontSize: 13, fontFamily: "Roboto, sans-serif" }}>
+              style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.7)", borderRadius: 8, padding: "7px 13px", cursor: "pointer", fontSize: 13, fontFamily: "var(--az-font)" }}>
               👥 Users
             </button>
           )}
           <button onClick={onAdminClick}
-            style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", borderRadius: 8, padding: "7px 15px", cursor: "pointer", fontSize: 13, fontFamily: "Roboto, sans-serif", fontWeight: 600 }}>
+            style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", borderRadius: 8, padding: "7px 15px", cursor: "pointer", fontSize: 13, fontFamily: "var(--az-font)", fontWeight: 600 }}>
             ⚙ Admin
           </button>
           <button onClick={() => signOut({ callbackUrl: "/login" })}
-            style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.45)", borderRadius: 8, padding: "7px 13px", cursor: "pointer", fontSize: 13, fontFamily: "Roboto, sans-serif" }}>
+            style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.45)", borderRadius: 8, padding: "7px 13px", cursor: "pointer", fontSize: 13, fontFamily: "var(--az-font)" }}>
             Sign out
           </button>
         </div>
