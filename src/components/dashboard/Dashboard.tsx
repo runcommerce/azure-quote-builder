@@ -10,14 +10,22 @@ import IntelligenceView from "./IntelligenceView";
 import AdminSettingsView from "./AdminSettingsView";
 import ClientPortalsView from "./ClientPortalsView";
 import EmailQuoteView from "./EmailQuoteView";
+import AgentHubView from "./AgentHubView";
+import KnowledgeBaseView from "./KnowledgeBaseView";
+import GuardrailsView from "./GuardrailsView";
+import AgentQueueView from "./AgentQueueView";
 import { signOut, useSession } from "next-auth/react";
 
-const TITLES: Record<View, string> = {
+const TITLES: Record<string, string> = {
   "dashboard": "Dashboard", "upload-quote": "Upload RFQ",
   "new-quote": "New Quote", "email-quote": "Email Quote",
   "quotes": "Quotes", "customers": "Customers",
   "client-portals": "Client Portals", "pricing": "Pricing Data",
   "intelligence": "Intelligence", "admin-settings": "Admin Settings",
+  "agent-hub":      "Agent Hub",
+  "knowledge-base": "Knowledge Base",
+  "guardrails":     "Guardrails",
+  "agent-queue":    "Agent Queue",
 };
 
 const NAV = [
@@ -30,6 +38,10 @@ const NAV = [
   { id: "client-portals", label: "Client Portals",  icon: "◈", group: "Manage" },
   { id: "pricing",        label: "Pricing Data",    icon: "€", group: "Intel"  },
   { id: "intelligence",   label: "Intelligence",    icon: "◑", group: "Intel"  },
+  { id: "agent-hub",      label: "Agent Hub",       icon: "🤖", group: "Agent"  },
+  { id: "agent-queue",    label: "Queue",           icon: "📥", group: "Agent"  },
+  { id: "knowledge-base", label: "Knowledge Base",  icon: "📚", group: "Agent"  },
+  { id: "guardrails",     label: "Guardrails",      icon: "🛡", group: "Agent"  },
   { id: "admin-settings", label: "Admin Settings",  icon: "⚙", group: null     },
 ] as const;
 
@@ -58,7 +70,7 @@ const pill = (primary: boolean): React.CSSProperties => ({
 });
 
 export default function Dashboard() {
-  const [view, setView] = useState<View>("dashboard");
+  const [view, setView] = useState<string>("dashboard");
   const [menuOpen, setMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const { data: session } = useSession();
@@ -71,7 +83,7 @@ export default function Dashboard() {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  const navigate = (v: View) => { setView(v); setMenuOpen(false); };
+  const navigate = (v: string) => { setView(v as View); setMenuOpen(false); };
 
   // ── Sidebar content shared between desktop + mobile drawer ──
   const SidebarContent = () => (
@@ -99,7 +111,7 @@ export default function Dashboard() {
         })}
 
         {/* Grouped */}
-        {(["Create", "Manage", "Intel"] as const).map(g => (
+        {(["Create", "Manage", "Intel", "Agent"] as const).map(g => (
           <div key={g} style={{ marginTop: 4 }}>
             <div style={{ padding: "7px 16px 3px", fontSize: 9.5, fontWeight: 700, color: "rgba(255,255,255,0.20)", textTransform: "uppercase" as const, letterSpacing: "0.14em" }}>
               {g === "Create" ? "Create" : g === "Manage" ? "Manage" : "Intelligence"}
@@ -169,6 +181,10 @@ export default function Dashboard() {
       {view === "client-portals" && <ClientPortalsView />}
       {view === "intelligence"   && <IntelligenceView />}
       {view === "admin-settings" && <AdminSettingsView />}
+          {view === "agent-hub"      && <AgentHubView setView={navigate} />}
+          {view === "knowledge-base" && <KnowledgeBaseView />}
+          {view === "guardrails"     && <GuardrailsView />}
+          {view === "agent-queue"    && <AgentQueueView />}
       {view === "pricing"        && (
         <div style={{ padding: "16px 24px" }}>
           <h1 style={{ fontSize: 18, fontWeight: 800, color: "var(--az-ink)", marginBottom: 14 }}>Pricing Data</h1>
@@ -232,6 +248,7 @@ export default function Dashboard() {
             { id: "email-quote",    icon: "✉", label: "Email"    },
             { id: "customers",      icon: "◎", label: "Clients"  },
             { id: "client-portals", icon: "◈", label: "Portals"  },
+            { id: "agent-queue",    icon: "📥", label: "Queue"    },
           ].map(t => {
             const active = view === t.id;
             return (
