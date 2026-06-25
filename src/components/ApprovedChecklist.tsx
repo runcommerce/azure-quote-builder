@@ -11,13 +11,19 @@ interface Props {
 }
 
 export default function ApprovedChecklist({ spec, admin, plMaterial, jobDefaults, deliveryRule }: Props) {
+  const size = spec.finished_size_length && spec.finished_size_width
+    ? `${spec.finished_size_length}x${spec.finished_size_width}mm`
+    : spec.flat_size_length && spec.flat_size_width
+    ? `${spec.flat_size_length}x${spec.flat_size_width}mm flat`
+    : "[confirm]";
+
   const steps = [
     `Find customer: ${spec.customer_name || "[check email]"}`,
     `Create Costed Quote`,
     `Job type: ${spec.product_type || "[confirm]"}`,
     `Quantity: ${spec.quantity || "[confirm]"}`,
     `Stock: ${plMaterial?.printlogic || "[Aaron to select]"}`,
-    `Size: ${spec.finished_size_mm || "[confirm]"} — Sheet: ${admin.defaultSheetSize}`,
+    `Size: ${size} — Sheet: ${admin.defaultSheetSize}`,
     `Sides: ${spec.sides_printed || jobDefaults?.sides || "[confirm]"}`,
     `Apply finishes (per Aaron's rules)`,
     `Delivery: ${deliveryRule ? `${deliveryRule.courier} (${deliveryRule.price})` : "[confirm]"}`,

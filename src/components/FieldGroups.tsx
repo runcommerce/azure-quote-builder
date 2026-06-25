@@ -3,14 +3,53 @@ import { B } from "@/lib/types";
 import type { ExtractedSpec } from "@/lib/types";
 
 const GROUPS = [
-  { label: "Job", fields: [{ key: "job_reference", label: "Job Reference" }, { key: "customer_name", label: "Customer" }, { key: "product_type", label: "Product Type" }, { key: "quantity", label: "Quantity" }] },
-  { label: "Dimensions", fields: [{ key: "flat_size_mm", label: "Flat Size (mm)" }, { key: "finished_size_mm", label: "Finished Size (mm)" }, { key: "pages", label: "Pages" }] },
-  { label: "Substrate", fields: [{ key: "substrate_type", label: "Substrate Type" }, { key: "substrate_weight_gsm", label: "Weight (gsm)" }, { key: "sustainability", label: "Sustainability" }] },
-  { label: "Print", fields: [{ key: "sides_printed", label: "Sides Printed" }, { key: "colours_side_1", label: "Colours — Side 1" }, { key: "colours_side_2", label: "Colours — Side 2" }] },
-  { label: "Coating & Finishing", fields: [{ key: "coating_side_1", label: "Coating — Side 1" }, { key: "coating_side_2", label: "Coating — Side 2" }, { key: "fold_type", label: "Fold Type" }, { key: "binding", label: "Binding" }, { key: "finishing_other", label: "Other Finishing" }] },
-  { label: "Packaging & Delivery", fields: [{ key: "bundling", label: "Bundling" }, { key: "packaging", label: "Packaging" }, { key: "delivery_locations", label: "Delivery Locations" }, { key: "delivery_address", label: "Delivery Address" }] },
-  { label: "Artwork & Proof", fields: [{ key: "proof_required", label: "Proof Required" }, { key: "artwork_status", label: "Artwork Status" }] },
-  { label: "Notes", fields: [{ key: "special_notes", label: "Special Notes" }] },
+  { label: "Job", fields: [
+    { key: "job_reference", label: "Job Reference" },
+    { key: "customer_name", label: "Customer" },
+    { key: "product_type", label: "Product Type" },
+    { key: "quantity", label: "Quantity" },
+  ]},
+  { label: "Dimensions", fields: [
+    { key: "flat_size_length", label: "Flat length (mm)" },
+    { key: "flat_size_width", label: "Flat width (mm)" },
+    { key: "finished_size_length", label: "Finished length (mm)" },
+    { key: "finished_size_width", label: "Finished width (mm)" },
+    { key: "pages", label: "Pages" },
+  ]},
+  { label: "Substrate", fields: [
+    { key: "substrate_type", label: "Substrate type" },
+    { key: "substrate_weight_gsm", label: "Weight (gsm)" },
+    { key: "sustainability", label: "Sustainability" },
+    { key: "substrate_special_requirements", label: "Special requirements" },
+  ]},
+  { label: "Print", fields: [
+    { key: "sides_printed", label: "Sides printed" },
+    { key: "ink_spec", label: "Ink spec" },
+    { key: "artwork_variation", label: "Art" },
+    { key: "artwork_status", label: "Artwork status" },
+  ]},
+  { label: "Folding & Finishing", fields: [
+    { key: "folded_or_bound", label: "Folded or bound" },
+    { key: "fold_type", label: "Fold type" },
+    { key: "binding_type", label: "Binding type" },
+  ]},
+  { label: "Packaging & Delivery", fields: [
+    { key: "bundling_type", label: "Bundling type" },
+    { key: "bundle_quantity", label: "Bundle quantity" },
+    { key: "delivery_region", label: "Delivery region" },
+    { key: "delivery_location_count", label: "Delivery locations" },
+    { key: "delivery_instructions", label: "Delivery instructions" },
+  ]},
+  { label: "Artwork & Proof", fields: [
+    { key: "proof_required", label: "Proof required" },
+    { key: "proof_type", label: "Proof type" },
+  ]},
+  { label: "Quantity & Versions", fields: [
+    { key: "number_of_versions", label: "Number of versions" },
+    { key: "split_per_version", label: "Version split" },
+    { key: "calculation_method", label: "Calculation method" },
+  ]},
+  { label: "Notes", fields: [{ key: "special_notes", label: "Special notes" }] },
 ];
 
 interface Props {
