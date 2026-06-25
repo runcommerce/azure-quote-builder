@@ -302,14 +302,52 @@ export default function ClientPortalsView() {
 
   const copy = (text: string, id: string) => { navigator.clipboard.writeText(text); setCopied(id); setTimeout(() => setCopied(null), 2000); };
 
-  // Show Winthrop demo if DB not set up yet
-  const display = portals.length === 0 && !loading ? [{
-    id: "demo", slug: "winthrop", name: "Winthrop Technologies",
-    company_name: "Winthrop Technologies", primary_color: "#1a3a2e",
-    accent_color: "#c8e63c", active: true, account_manager_name: "Lisa Reid",
-    account_manager_email: "lreid@azurecomm.ie", created_at: new Date().toISOString(),
-    invite_code: "WINTHROP2026",
-  }] : portals;
+  // Demo portals shown when DB has no records — reflects real Azure customers
+  const DEMO_PORTALS = [
+    {
+      id: "demo-hh", slug: "hh-global", name: "HH Global · Print Portal",
+      company_name: "HH Global", primary_color: "#1a3a2e", accent_color: "#c8e63c",
+      active: true, account_manager_name: "Lisa Reid", account_manager_email: "lreid@azurecomm.ie",
+      created_at: new Date().toISOString(), invite_code: "HHGLOBAL2026",
+      categories: ["Leaflets","Brochures","Mailing","Business Cards","Posters"],
+    },
+    {
+      id: "demo-cust", slug: "custodian", name: "Custodian · Ordering Portal",
+      company_name: "Custodian", primary_color: "#1b3a5c", accent_color: "#f5a623",
+      active: true, account_manager_name: "Lisa Reid", account_manager_email: "lreid@azurecomm.ie",
+      created_at: new Date().toISOString(), invite_code: "CUSTODIAN2026",
+      categories: ["Leaflets","Stationery","Brochures","Mailing","Booklets"],
+    },
+    {
+      id: "demo-konica", slug: "konica-minolta", name: "Konica Minolta · Print Hub",
+      company_name: "Konica Minolta", primary_color: "#cc0000", accent_color: "#ffffff",
+      active: true, account_manager_name: "Lisa Reid", account_manager_email: "lreid@azurecomm.ie",
+      created_at: new Date().toISOString(), invite_code: "KONICA2026",
+      categories: ["Business Cards","Stationery","Leaflets","Brochures"],
+    },
+    {
+      id: "demo-doe", slug: "dept-of-education", name: "Dept of Education · Print Portal",
+      company_name: "Department of Education", primary_color: "#003078", accent_color: "#f5a623",
+      active: true, account_manager_name: "Lisa Reid", account_manager_email: "lreid@azurecomm.ie",
+      created_at: new Date().toISOString(), invite_code: "DEPTEDUC2026",
+      categories: ["Leaflets","Booklets","Mailing","Posters","Stationery","Business Cards"],
+    },
+    {
+      id: "demo-revenue", slug: "revenue-commissioners", name: "Revenue · Stationery Portal",
+      company_name: "Revenue Commissioners", primary_color: "#004225", accent_color: "#e8c040",
+      active: true, account_manager_name: "Lisa Reid", account_manager_email: "lreid@azurecomm.ie",
+      created_at: new Date().toISOString(), invite_code: "REVENUE2026",
+      categories: ["Stationery","Business Cards","Leaflets","Mailing"],
+    },
+    {
+      id: "demo-lana", slug: "lana-pharma", name: "Lana Pharma · Print Portal",
+      company_name: "Lana Pharma", primary_color: "#2c5f8a", accent_color: "#5ab4e0",
+      active: true, account_manager_name: "Lisa Reid", account_manager_email: "lreid@azurecomm.ie",
+      created_at: new Date().toISOString(), invite_code: "LANAPHARMA2026",
+      categories: ["Leaflets","Brochures","Mailing","Stationery","Booklets"],
+    },
+  ];
+  const display = portals.length === 0 && !loading ? DEMO_PORTALS : portals;
 
   return (
     <div style={{ padding: "16px 24px", maxWidth: 1060 }}>

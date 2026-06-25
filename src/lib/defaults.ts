@@ -2,9 +2,14 @@ import type { AdminConfig, ApiConfig } from "./types";
 
 export const DEFAULT_ADMIN: AdminConfig = {
   portalCustomers: [
-    { id: "hh_global",  name: "HH Global",  inputType: "pdf",   active: true },
-    { id: "custodian",  name: "Custodian",   inputType: "email", active: true },
-    { id: "konica",     name: "Konica",      inputType: "email", active: true },
+    // Mtivity portal customers — structured spec PDFs via portal login
+    { id: "hh_global",       name: "HH Global",               inputType: "pdf",   active: true },
+    { id: "custodian",       name: "Custodian",                inputType: "pdf",   active: true },
+    { id: "konica",          name: "Konica Minolta",           inputType: "email", active: true },
+    // Direct / government customers — email RFQ, no portal system
+    { id: "dept_education",  name: "Dept of Education",        inputType: "email", active: true },
+    { id: "revenue",         name: "Revenue Commissioners",    inputType: "email", active: true },
+    { id: "lana_pharma",     name: "Lana Pharma",              inputType: "email", active: true },
   ],
   jobTypeDefaults: [
     { jobType: "Leaflet",         stock: "130gsm silk",     sides: "Double sided", delivery: "Overnight Parcel (€10)", active: true },
