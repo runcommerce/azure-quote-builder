@@ -78,9 +78,20 @@ export interface ApiConfig {
 }
 
 export interface ExtractedSpec {
+  // ── Source metadata ───────────────────────────────────────────────────
+  source_format: "mtivity" | "generic" | null;   // NEW — format detected
+  cannot_quote:  boolean | null;                  // NEW — non-print flag
+  cannot_quote_reason: string | null;             // NEW — reason if true
+  // ── Substrate conflict flags ──────────────────────────────────────────
+  substrate_conflict: boolean | null;             // NEW — e.g. silk but writable
+  substrate_conflict_detail: string | null;       // NEW — human-readable explanation
+  // ── Core fields ──────────────────────────────────────────────────────
   job_reference: string | null;
   customer_name: string | null;
+  created_by: string | null;                      // NEW — Mtivity spec creator name
+  created_date: string | null;                    // NEW — Mtivity created date
   product_type: string | null;
+  mtivity_product_type: string | null;            // NEW — raw Mtivity label pre-mapping
   quantity: number | null;
   flat_size_mm: string | null;
   finished_size_mm: string | null;
