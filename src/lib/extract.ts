@@ -107,5 +107,5 @@ export async function callExtractAPI(
     throw new Error(err.error || `API error ${res.status}`);
   }
   const data = await res.json();
-  return data.text;
+  return data.result ?? data.text ?? "";
 }

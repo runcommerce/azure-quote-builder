@@ -82,7 +82,10 @@ export default function UploadQuoteView() {
       });
       const cfg = apiConfig[apiConfig.provider as keyof typeof apiConfig] as { model: string; apiKey: string };
       const text = await callExtractAPI(base64, "application/pdf", apiConfig.provider, cfg.model, buildPrompt(admin), cfg.apiKey || "");
-      const parsed: ExtractedSpec = JSON.parse(text.replace(/```json|```/g, "").trim());
+      if (!text) throw new Error("No response from API. Check ANTHROPIC_API_KEY is set in Vercel environment variables.");
+      const cleaned = text.replace(/```json|```/g, "").trim();
+      if (!cleaned) throw new Error("Empty response from API.");
+      const parsed: ExtractedSpec = JSON.parse(cleaned);
       setSpec(parsed); setStatus("done");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Extraction failed. Check ANTHROPIC_API_KEY in Admin Settings.");
