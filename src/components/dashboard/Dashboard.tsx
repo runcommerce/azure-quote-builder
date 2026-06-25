@@ -14,6 +14,7 @@ import AgentHubView from "./AgentHubView";
 import KnowledgeBaseView from "./KnowledgeBaseView";
 import GuardrailsView from "./GuardrailsView";
 import AgentQueueView from "./AgentQueueView";
+import SystemAdminView from "./SystemAdminView";
 import { signOut, useSession } from "next-auth/react";
 
 const TITLES: Record<string, string> = {
@@ -22,6 +23,7 @@ const TITLES: Record<string, string> = {
   "quotes": "Quotes", "customers": "Customers",
   "client-portals": "Client Portals", "pricing": "Pricing Data",
   "intelligence": "Intelligence", "admin-settings": "Admin Settings",
+  "system-admin":   "System Administration",
   "agent-hub":      "Agent Hub",
   "knowledge-base": "Knowledge Base",
   "guardrails":     "Guardrails",
@@ -43,6 +45,7 @@ const NAV = [
   { id: "knowledge-base", label: "Knowledge Base",  icon: "📚", group: "Agent"  },
   { id: "guardrails",     label: "Guardrails",      icon: "🛡", group: "Agent"  },
   { id: "admin-settings", label: "Admin Settings",  icon: "⚙", group: null     },
+  { id: "system-admin",   label: "System Admin",     icon: "🔐", group: "Super"  },
 ] as const;
 
 // Dot grid
@@ -111,7 +114,7 @@ export default function Dashboard() {
         })}
 
         {/* Grouped */}
-        {(["Create", "Manage", "Intel", "Agent"] as const).map(g => (
+        {(["Create", "Manage", "Intel", "Agent", "Super"] as const).map(g => (
           <div key={g} style={{ marginTop: 4 }}>
             <div style={{ padding: "7px 16px 3px", fontSize: 9.5, fontWeight: 700, color: "rgba(255,255,255,0.20)", textTransform: "uppercase" as const, letterSpacing: "0.14em" }}>
               {g === "Create" ? "Create" : g === "Manage" ? "Manage" : "Intelligence"}
@@ -185,6 +188,7 @@ export default function Dashboard() {
           {view === "knowledge-base" && <KnowledgeBaseView />}
           {view === "guardrails"     && <GuardrailsView />}
           {view === "agent-queue"    && <AgentQueueView />}
+          {view === "system-admin"   && <SystemAdminView />}
       {view === "pricing"        && (
         <div style={{ padding: "16px 24px" }}>
           <h1 style={{ fontSize: 18, fontWeight: 800, color: "var(--az-ink)", marginBottom: 14 }}>Pricing Data</h1>
