@@ -365,6 +365,42 @@ export function validateExtractedSpec(spec: Partial<ExtractedSpec>): Partial<Ext
     updated.number_of_versions = 1;
   }
 
+  // Delivery defaults (Spec 2 feedback):
+  // - delivery_location_count defaults to 1 if not stated
+  // - non-Dublin → overnight parcel auto-applied
+  // - Dublin → left open for human selection (delivery_region stays "Dublin")
+  if (!updated.delivery_location_count) {
+    updated.delivery_location_count = 1;
+    // Set status to amber (inferred, not stated)
+    if (updated.field_status) updated.field_status["delivery_location_count"] = "amber";
+  }
+  if (updated.delivery_region && updated.delivery_region !== "Dublin" && !updated.delivery_instructions) {
+    updated.delivery_instructions = "Overnight parcel delivery";
+  }
+
+  // Freight-only spec handling (Spec 3 feedback):
+  // If cannot_quote but it's a multi-location delivery, allow it as a delivery-only quote
+  // by estimating overnight rate × location count
+  if (updated.cannot_quote && updated.category_of_work === "Freight - General") {
+    const locs = updated.delivery_location_count ?? 1;
+    updated.cannot_quote = false;
+    updated.cannot_quote_reason = null;
+    updated.delivery_required = true;
+    updated.delivery_location_count = locs;
+    // Auto-set delivery description with overnight rate calculation
+    if (!updated.delivery_instructions) {
+      updated.delivery_instructions = `${locs} location${locs > 1 ? "s" : ""} × overnight parcel €10 = €${locs * 10} estimated delivery`;
+    }
+    if (updated.field_status) {
+      updated.field_status["delivery_location_count"] = "amber";
+      updated.field_status["delivery_instructions"] = "amber";
+    }
+    // Mark as delivery-only so Item Details renders correctly
+    updated.product_type = "Delivery Only";
+    updated.special_notes = (updated.special_notes ? updated.special_notes + " · " : "") +
+      "Freight/delivery-only RFQ — no print component. Overnight parcel rate applied per location.";
+  }
+
   // Build / augment field_status with derived statuses for anything AI didn't cover
   const status: FieldStatusMap = { ...(spec.field_status ?? {}) };
   const allKeys: (keyof ExtractedSpec)[] = [

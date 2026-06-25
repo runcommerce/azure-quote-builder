@@ -7,6 +7,7 @@ import {
   generateItemDetails, validateExtractedSpec,
   getMissingFields, draftClarificationEmail, deriveFieldStatus,
 } from "@/lib/extract";
+import { saveQuote, newQuoteId } from "@/lib/quotes";
 import type {
   ExtractedSpec, MtivitySubstrate, MtivitySide, MtivityCoating,
   MtivityFinishingItem, MtivityDeliveryLocation, FieldStatus,
@@ -90,6 +91,10 @@ export default function UploadQuoteView() {
   const [clarifDraft, setClarifDraft] = useState<{ subject: string; body: string } | null>(null);
   const [clarifSending, setClarifSending] = useState(false);
   const [clarifSent, setClarifSent] = useState(false);
+  const [savedQuoteId, setSavedQuoteId]   = useState<string | null>(null);
+  const [draftSaved, setDraftSaved]       = useState(false);
+  const [dateSubmitted, setDateSubmitted] = useState("");
+  const [dateIssued, setDateIssued]       = useState("");
 
   const admin = DEFAULT_ADMIN;
   const apiConfig = DEFAULT_API_CONFIG;
@@ -181,6 +186,30 @@ export default function UploadQuoteView() {
       else if (data.draft) setClarifDraft({ subject: data.draft.subject ?? clarifDraft.subject, body: data.draft.textBody ?? clarifDraft.body });
     } catch (e) { console.error(e); }
     finally { setClarifSending(false); }
+  };
+
+  // ── Save draft ────────────────────────────────────────────────────────
+  const saveDraft = () => {
+    if (!spec) return;
+    const id = savedQuoteId ?? newQuoteId();
+    saveQuote({
+      id,
+      status: status === "approved" ? "sent" : "incomplete",
+      spec_ref: spec.job_reference ?? null,
+      spec_name: spec.spec_name ?? null,
+      customer_name: spec.customer_name ?? null,
+      product_type: spec.product_type ?? null,
+      quantity: spec.quantity ?? null,
+      delivery_region: spec.delivery_region ?? null,
+      date_submitted: dateSubmitted ? new Date(dateSubmitted).toISOString() : null,
+      date_issued: dateIssued ? new Date(dateIssued).toISOString() : null,
+      date_updated: new Date().toISOString(),
+      spec,
+      notes: "",
+    });
+    setSavedQuoteId(id);
+    setDraftSaved(true);
+    setTimeout(() => setDraftSaved(false), 2500);
   };
 
   // ── Derived ──────────────────────────────────────────────────────────
@@ -476,7 +505,7 @@ export default function UploadQuoteView() {
               <div style={sHdr()}><span style={sLbl}>1 — Job Header</span></div>
               <div style={fWrap}>
                 <F k="job_reference"  label="Quote / Job reference" ph="e.g. 741086" />
-                <F k="customer_name"  label="Client name"           ph="e.g. Custodian" />
+                <F k="customer_name"  label="Client name"           ph="Customer name" />
                 <F k="created_by"     label="Created by"            ph="e.g. Bryan Nicholas CPT" />
                 <F k="created_date"   label="Created on"            ph="22 May 2026" />
                 <F k="unit_of_measure" label="Unit of measure"      opts={["Each","Sets","Sheets"]} />
@@ -663,12 +692,32 @@ export default function UploadQuoteView() {
               <div style={fWrap}><F k="special_notes" label="Special notes" ph="Any other quoting-relevant info" wide /></div>
             </div>
 
+            {/* ─── QUOTE DATES ─── */}
+            <div style={card()}>
+              <div style={sHdr()}><span style={sLbl}>📅 Quote Dates</span></div>
+              <div style={fWrap}>
+                <div>
+                  <label style={{ fontSize: 11, fontWeight: 600, display: "block", marginBottom: 4, textTransform: "uppercase" as const, letterSpacing: "0.05em", color: T.muted }}>Quote Submitted</label>
+                  <input type="date" value={dateSubmitted} style={inpStyle()} onChange={e => setDateSubmitted(e.target.value)} />
+                  <div style={{ fontSize: 10, color: T.muted, marginTop: 3 }}>When customer sent the RFQ</div>
+                </div>
+                <div>
+                  <label style={{ fontSize: 11, fontWeight: 600, display: "block", marginBottom: 4, textTransform: "uppercase" as const, letterSpacing: "0.05em", color: T.muted }}>Quote Issued</label>
+                  <input type="date" value={dateIssued} style={inpStyle()} onChange={e => setDateIssued(e.target.value)} />
+                  <div style={{ fontSize: 10, color: T.muted, marginTop: 3 }}>When Azure sent the quote</div>
+                </div>
+              </div>
+            </div>
+
             {/* ACTIONS */}
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 4 }}>
               <button onClick={() => { setFile(null); setSpec(null); setStatus("idle"); setError(null); setIsMtivity(false); setClarifPanel(false); setClarifSent(false); }} style={{ padding: "11px 18px", borderRadius: 10, border: `1.5px solid ${T.line}`, background: "#fff", color: T.muted, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>← New spec</button>
+              <button onClick={saveDraft} style={{ padding: "11px 18px", borderRadius: 10, border: `1.5px solid ${T.forest}`, background: draftSaved ? T.forest : "#fff", color: draftSaved ? T.lime : T.forest, fontSize: 14, fontWeight: 600, cursor: "pointer", transition: "all 0.2s" }}>
+                {draftSaved ? "✓ Saved" : savedQuoteId ? "↑ Update draft" : "💾 Save draft"}
+              </button>
               <button onClick={() => navigator.clipboard.writeText(JSON.stringify(spec, null, 2))} style={{ padding: "11px 18px", borderRadius: 10, border: `1.5px solid ${T.line}`, background: "#fff", color: T.muted, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Export JSON</button>
               {status === "done" && !hasConflict && missingNow.length === 0 && (
-                <button onClick={() => setStatus("approved")} style={{ flex: 1, minWidth: 180, padding: "11px 18px", borderRadius: 10, border: "none", background: T.forest, color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>✓ Approve — Ready for PrintLogic</button>
+                <button onClick={() => { setStatus("approved"); saveDraft(); }} style={{ flex: 1, minWidth: 180, padding: "11px 18px", borderRadius: 10, border: "none", background: T.forest, color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>✓ Approve — Ready for PrintLogic</button>
               )}
               {status === "done" && !hasConflict && missingNow.length > 0 && (
                 <div style={{ flex: 1, padding: "11px 18px", borderRadius: 10, background: T.amberBg, border: `1px solid #fcd34d`, fontSize: 13, color: T.amberTx, display: "flex", alignItems: "center", gap: 10 }}>

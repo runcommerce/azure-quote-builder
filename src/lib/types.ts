@@ -256,3 +256,24 @@ export interface ExtractedSpec {
   // Keys match field names above. Values: "green" | "amber" | "red" | "empty"
   field_status: FieldStatusMap;
 }
+
+// ── SAVED QUOTE RECORD ────────────────────────────────────────────────────
+// Stored in localStorage (key: "azure_iq_quotes") as JSON array.
+// Status lifecycle: incomplete → sent → won | lost
+export type QuoteStatus = "incomplete" | "sent" | "won" | "lost";
+
+export interface QuoteRecord {
+  id: string;                    // uuid generated on save
+  status: QuoteStatus;
+  spec_ref: string | null;       // job_reference from spec
+  spec_name: string | null;
+  customer_name: string | null;
+  product_type: string | null;
+  quantity: number | null;
+  delivery_region: string | null;
+  date_submitted: string | null; // ISO — when customer submitted the RFQ
+  date_issued: string | null;    // ISO — when Azure sent the quote
+  date_updated: string;          // ISO — last modified
+  spec: Partial<ExtractedSpec>;  // full extracted spec
+  notes: string;
+}
