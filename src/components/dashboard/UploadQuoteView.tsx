@@ -5,156 +5,131 @@ import {
   buildPrompt, buildMtivityPrompt, callExtractAPI,
   lookupMaterial, getJobDefaults, getDeliveryRule,
   generateItemDetails, validateExtractedSpec,
+  getMissingFields, draftClarificationEmail, deriveFieldStatus,
 } from "@/lib/extract";
 import type {
   ExtractedSpec, MtivitySubstrate, MtivitySide, MtivityCoating,
-  MtivityFinishingItem, MtivityDeliveryLocation,
+  MtivityFinishingItem, MtivityDeliveryLocation, FieldStatus,
 } from "@/lib/types";
 
+// ── TOKENS ────────────────────────────────────────────────────────────────
+const T = {
+  forest: "#1a3a2e", lime: "#c8e63c",
+  ink: "#111827", muted: "#6B7280", line: "#E5E7EB",
+  amber: "#ED7D31", amberBg: "#FDF3E8", amberTx: "#633806",
+  red: "#C0392B", redBg: "#FDECEA",
+  green: "#2D6A4F", greenBg: "#E9F5F0",
+  blue: "#185FA5", blueBg: "#E8F4FA",
+};
+
+// ── RAG COLOURS ───────────────────────────────────────────────────────────
+const RAG: Record<FieldStatus | "empty", { dot: string; border: string; bg: string; label: string }> = {
+  green: { dot: "#22c55e", border: "#86efac", bg: "#f0fdf4", label: "Extracted" },
+  amber: { dot: "#f59e0b", border: "#fcd34d", bg: "#fffbeb", label: "Inferred" },
+  red:   { dot: "#ef4444", border: "#fca5a5", bg: "#fff5f5", label: "Missing" },
+  empty: { dot: "transparent", border: T.line, bg: "#fff", label: "" },
+};
+
+function StatusDot({ status }: { status: FieldStatus }) {
+  const r = RAG[status];
+  if (status === "empty") return null;
+  return (
+    <span title={r.label} style={{
+      display: "inline-block", width: 7, height: 7, borderRadius: "50%",
+      background: r.dot, marginLeft: 5, verticalAlign: "middle", flexShrink: 0,
+    }} />
+  );
+}
+
 // ── STYLE HELPERS ─────────────────────────────────────────────────────────
-const forest  = "var(--az-forest, #1a3a2e)";
-const lime    = "var(--az-lime, #c8e63c)";
-const ink     = "var(--az-ink, #111827)";
-const muted   = "var(--az-muted, #6B7280)";
-const line    = "var(--az-line, #E5E7EB)";
-const amber   = "#ED7D31";
-const amberBg = "#FDF3E8";
-const red     = "#C0392B";
-const redBg   = "#FDECEA";
-const greenBg = "#E9F5F0";
-const greenTx = "#2D6A4F";
-const blueBg  = "#E8F4FA";
-const blueTx  = "#185FA5";
+const card  = (e?: React.CSSProperties): React.CSSProperties => ({ background: "#fff", borderRadius: 12, border: `1px solid ${T.line}`, marginBottom: 14, overflow: "hidden", ...e });
+const sHdr  = (e?: React.CSSProperties): React.CSSProperties => ({ background: T.forest, padding: "10px 18px", display: "flex", alignItems: "center", gap: 8, ...e });
+const sLbl: React.CSSProperties = { fontSize: 11, fontWeight: 700, color: "#fff", textTransform: "uppercase", letterSpacing: "0.08em" };
+const fWrap: React.CSSProperties = { padding: "14px 18px", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px,1fr))", gap: 12 };
+const fWrapNarrow: React.CSSProperties = { ...fWrap, gridTemplateColumns: "repeat(auto-fill, minmax(160px,1fr))" };
 
-const card = (extra?: React.CSSProperties): React.CSSProperties => ({
-  background: "#fff", borderRadius: 12, border: `1px solid ${line}`,
-  padding: "16px 20px", marginBottom: 14, ...extra,
-});
-const sectionHead = (extra?: React.CSSProperties): React.CSSProperties => ({
-  background: forest, padding: "10px 18px", display: "flex", alignItems: "center",
-  gap: 8, borderRadius: "10px 10px 0 0", ...extra,
-});
-const sectionLabel: React.CSSProperties = {
-  fontSize: 11, fontWeight: 700, color: "#fff",
-  textTransform: "uppercase", letterSpacing: "0.08em",
-};
-const fieldWrap: React.CSSProperties = {
-  padding: "14px 18px",
-  display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(190px, 1fr))",
-  gap: 12,
-};
-const label = (flagged?: boolean): React.CSSProperties => ({
-  fontSize: 11, fontWeight: 600, display: "block", marginBottom: 4,
-  textTransform: "uppercase", letterSpacing: "0.05em",
-  color: flagged ? amber : muted,
-});
-const inp = (flagged?: boolean): React.CSSProperties => ({
-  width: "100%", padding: "8px 11px", borderRadius: 7, fontSize: 13,
-  border: `1.5px solid ${flagged ? "#fcd34d" : line}`,
-  background: flagged ? amberBg : "#fff", color: ink, boxSizing: "border-box",
-});
-const toggle = (on: boolean): React.CSSProperties => ({
-  display: "inline-flex", alignItems: "center", gap: 6,
-  padding: "5px 12px", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer",
-  border: `1.5px solid ${on ? forest : line}`,
-  background: on ? forest : "#fff", color: on ? lime : muted,
-});
-const addBtn: React.CSSProperties = {
-  padding: "6px 14px", borderRadius: 6, border: `1.5px solid ${line}`,
-  background: "#fff", fontSize: 12, fontWeight: 600, color: muted, cursor: "pointer",
-};
-const removeBtn: React.CSSProperties = {
-  padding: "4px 10px", borderRadius: 5, border: `1px solid #fca5a5`,
-  background: redBg, fontSize: 11, color: red, cursor: "pointer",
-};
-const groupBox = (extra?: React.CSSProperties): React.CSSProperties => ({
-  border: `1px solid ${line}`, borderRadius: 10, overflow: "hidden", marginBottom: 10, ...extra,
-});
-const groupHead = (extra?: React.CSSProperties): React.CSSProperties => ({
-  background: "#F9FAFB", padding: "8px 14px", display: "flex",
-  justifyContent: "space-between", alignItems: "center",
-  borderBottom: `1px solid ${line}`, ...extra,
-});
-const groupTitle: React.CSSProperties = { fontSize: 12, fontWeight: 700, color: ink };
-const innerPad: React.CSSProperties = { padding: "12px 14px" };
+function Lbl({ children, status }: { children: React.ReactNode; status?: FieldStatus }) {
+  return (
+    <label style={{ fontSize: 11, fontWeight: 600, display: "flex", alignItems: "center", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.05em", color: status === "red" ? T.red : status === "amber" ? T.amber : T.muted }}>
+      {children}
+      {status && status !== "empty" && <StatusDot status={status} />}
+    </label>
+  );
+}
 
-// blank factories
-const blankCoating  = (): MtivityCoating        => ({ coating_type: "", coating_area: "Overall", comments: "" });
-const blankSide     = (n: number): MtivitySide   => ({ side_number: n, four_colour_process: true, spot_colours_required: false, number_of_spot_colours: null, coating_required: false, number_of_coatings: null, coatings: [], side_comments: "" });
-const blankSub      = (): MtivitySubstrate       => ({ used_as: "", substrate_type: "Paper", substrate_name: "", sustainability_accreditation: "", measured_by: "Weight", weight: null, weight_unit: "gsm", thickness: null, thickness_unit: "", section_page_count: null, substrate_comments: "", ink_coverage: "", artwork_variation: "", sides: [blankSide(1), blankSide(2)] });
-const blankFinish   = (): MtivityFinishingItem   => ({ finishing_type: "", finishing_area: "Overall", comments: "" });
-const blankLocation = (): MtivityDeliveryLocation => ({ location_name: "", address: "", city: "", county: "", country: "Ireland", eircode: "", quantity: null, delivery_notes: "" });
+function inpStyle(status?: FieldStatus): React.CSSProperties {
+  const r = RAG[status ?? "empty"];
+  return { width: "100%", padding: "8px 11px", borderRadius: 7, fontSize: 13, border: `1.5px solid ${r.border}`, background: r.bg, color: T.ink, boxSizing: "border-box" };
+}
+
+const tog = (on: boolean): React.CSSProperties => ({ display: "inline-flex", alignItems: "center", padding: "5px 12px", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1.5px solid ${on ? T.forest : T.line}`, background: on ? T.forest : "#fff", color: on ? T.lime : T.muted });
+const addB: React.CSSProperties = { padding: "6px 14px", borderRadius: 6, border: `1.5px solid ${T.line}`, background: "#fff", fontSize: 12, fontWeight: 600, color: T.muted, cursor: "pointer" };
+const remB: React.CSSProperties = { padding: "4px 10px", borderRadius: 5, border: "1px solid #fca5a5", background: T.redBg, fontSize: 11, color: T.red, cursor: "pointer" };
+const gBox = (): React.CSSProperties => ({ border: `1px solid ${T.line}`, borderRadius: 10, overflow: "hidden", marginBottom: 10 });
+const gHdr = (): React.CSSProperties => ({ background: "#F9FAFB", padding: "8px 14px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: `1px solid ${T.line}` });
+const gTtl: React.CSSProperties = { fontSize: 12, fontWeight: 700, color: T.ink };
+const ipad: React.CSSProperties = { padding: "12px 14px" };
+
+// ── BLANK FACTORIES ───────────────────────────────────────────────────────
+const bCoat = (): MtivityCoating => ({ coating_type: "", coating_area: "Overall", comments: "" });
+const bSide = (n: number): MtivitySide => ({ side_number: n, four_colour_process: true, spot_colours_required: false, number_of_spot_colours: null, coating_required: false, number_of_coatings: null, coatings: [], side_comments: "" });
+const bSub  = (): MtivitySubstrate => ({ used_as: "", substrate_type: "Paper", substrate_name: "", sustainability_accreditation: "", measured_by: "Weight", weight: null, weight_unit: "gsm", thickness: null, thickness_unit: "", section_page_count: null, substrate_comments: "", special_requirements: "", ink_coverage: "", artwork_variation: "", sides: [bSide(1), bSide(2)] });
+const bFin  = (): MtivityFinishingItem => ({ finishing_type: "", finishing_area: "Overall", comments: "" });
+const bLoc  = (): MtivityDeliveryLocation => ({ location_name: "", address: "", city: "", county: "", country: "Ireland", eircode: "", quantity: null, delivery_notes: "" });
 
 export default function UploadQuoteView() {
-  const [file, setFile]           = useState<File | null>(null);
-  const [status, setStatus]       = useState<"idle"|"loading"|"done"|"approved"|"cannot_quote">("idle");
-  const [spec, setSpec]           = useState<Partial<ExtractedSpec> | null>(null);
-  const [error, setError]         = useState<string | null>(null);
-  const [copied, setCopied]       = useState(false);
-  const [dragOver, setDragOver]   = useState(false);
+  const [file, setFile]         = useState<File | null>(null);
+  const [status, setStatus]     = useState<"idle"|"loading"|"done"|"approved"|"cannot_quote">("idle");
+  const [spec, setSpec]         = useState<Partial<ExtractedSpec> | null>(null);
+  const [error, setError]       = useState<string | null>(null);
+  const [copied, setCopied]     = useState(false);
+  const [dragOver, setDragOver] = useState(false);
   const [isMtivity, setIsMtivity] = useState(false);
+  const [clarifPanel, setClarifPanel] = useState(false);
+  const [clarifEmail, setClarifEmail] = useState("");
+  const [clarifDraft, setClarifDraft] = useState<{ subject: string; body: string } | null>(null);
+  const [clarifSending, setClarifSending] = useState(false);
+  const [clarifSent, setClarifSent] = useState(false);
 
-  const admin     = DEFAULT_ADMIN;
+  const admin = DEFAULT_ADMIN;
   const apiConfig = DEFAULT_API_CONFIG;
 
-  // ── Spec field updater ─────────────────────────────────────────────────
-  const set = <K extends keyof ExtractedSpec>(key: K, val: ExtractedSpec[K]) =>
-    setSpec(prev => prev ? { ...prev, [key]: val } : prev);
+  // ── Updaters ─────────────────────────────────────────────────────────
+  const set = <K extends keyof ExtractedSpec>(k: K, v: ExtractedSpec[K]) =>
+    setSpec(p => p ? { ...p, [k]: v } : p);
 
-  // ── Substrate updater ──────────────────────────────────────────────────
   const setSub = (si: number, patch: Partial<MtivitySubstrate>) =>
-    setSpec(prev => {
-      if (!prev) return prev;
-      const subs = [...(prev.substrates ?? [])];
-      subs[si] = { ...subs[si], ...patch };
-      return { ...prev, substrates: subs };
-    });
+    setSpec(p => { if (!p) return p; const s = [...(p.substrates ?? [])]; s[si] = { ...s[si], ...patch }; return { ...p, substrates: s }; });
 
   const setSide = (si: number, di: number, patch: Partial<MtivitySide>) =>
-    setSpec(prev => {
-      if (!prev) return prev;
-      const subs = [...(prev.substrates ?? [])];
-      const sides = [...(subs[si]?.sides ?? [])];
-      sides[di] = { ...sides[di], ...patch };
-      subs[si] = { ...subs[si], sides };
-      return { ...prev, substrates: subs };
+    setSpec(p => {
+      if (!p) return p;
+      const ss = [...(p.substrates ?? [])]; const sd = [...(ss[si]?.sides ?? [])];
+      sd[di] = { ...sd[di], ...patch }; ss[si] = { ...ss[si], sides: sd };
+      return { ...p, substrates: ss };
     });
 
-  const setCoating = (si: number, di: number, ci: number, patch: Partial<MtivityCoating>) =>
-    setSpec(prev => {
-      if (!prev) return prev;
-      const subs = [...(prev.substrates ?? [])];
-      const sides = [...(subs[si]?.sides ?? [])];
-      const coatings = [...(sides[di]?.coatings ?? [])];
-      coatings[ci] = { ...coatings[ci], ...patch };
-      sides[di] = { ...sides[di], coatings };
-      subs[si] = { ...subs[si], sides };
-      return { ...prev, substrates: subs };
+  const setCoat = (si: number, di: number, ci: number, patch: Partial<MtivityCoating>) =>
+    setSpec(p => {
+      if (!p) return p;
+      const ss = [...(p.substrates ?? [])]; const sd = [...(ss[si]?.sides ?? [])]; const cs = [...(sd[di]?.coatings ?? [])];
+      cs[ci] = { ...cs[ci], ...patch }; sd[di] = { ...sd[di], coatings: cs }; ss[si] = { ...ss[si], sides: sd };
+      return { ...p, substrates: ss };
     });
 
-  const setFinish = (i: number, patch: Partial<MtivityFinishingItem>) =>
-    setSpec(prev => {
-      if (!prev) return prev;
-      const items = [...(prev.finishing_items ?? [])];
-      items[i] = { ...items[i], ...patch };
-      return { ...prev, finishing_items: items };
-    });
+  const setFin = (i: number, patch: Partial<MtivityFinishingItem>) =>
+    setSpec(p => { if (!p) return p; const fi = [...(p.finishing_items ?? [])]; fi[i] = { ...fi[i], ...patch }; return { ...p, finishing_items: fi }; });
 
   const setLoc = (i: number, patch: Partial<MtivityDeliveryLocation>) =>
-    setSpec(prev => {
-      if (!prev) return prev;
-      const locs = [...(prev.delivery_locations ?? [])];
-      locs[i] = { ...locs[i], ...patch };
-      return { ...prev, delivery_locations: locs };
-    });
+    setSpec(p => { if (!p) return p; const ls = [...(p.delivery_locations ?? [])]; ls[i] = { ...ls[i], ...patch }; return { ...p, delivery_locations: ls }; });
 
-  // ── File handling ──────────────────────────────────────────────────────
   const handleFile = useCallback((f: File) => {
     if (f.type !== "application/pdf") { setError("Please upload a PDF file."); return; }
     setFile(f); setSpec(null); setError(null); setStatus("idle"); setIsMtivity(false);
+    setClarifPanel(false); setClarifSent(false); setClarifDraft(null);
   }, []);
 
-  // ── Parse ──────────────────────────────────────────────────────────────
+  // ── Parse ─────────────────────────────────────────────────────────────
   const parseSpec = async () => {
     if (!file) return;
     setStatus("loading"); setError(null);
@@ -165,222 +140,199 @@ export default function UploadQuoteView() {
         r.onerror = rej;
         r.readAsDataURL(file);
       });
-      const cfg    = apiConfig[apiConfig.provider as keyof typeof apiConfig] as { model: string; apiKey: string };
-      // Mtivity hint: use Mtivity prompt for portal-named files, fall back to generic
-      const hint   = file.name.toLowerCase().includes("spec") || file.name.toLowerCase().includes("mtivity");
+      const cfg = apiConfig[apiConfig.provider as keyof typeof apiConfig] as { model: string; apiKey: string };
+      const hint = file.name.toLowerCase().includes("spec") || file.name.toLowerCase().includes("mtivity");
       const prompt = hint ? buildMtivityPrompt(admin) : buildPrompt(admin);
-      const text   = await callExtractAPI(base64, "application/pdf", apiConfig.provider, cfg.model, prompt, cfg.apiKey || "");
-      if (!text) throw new Error("No response from API — check ANTHROPIC_API_KEY in Vercel env vars.");
+      const text = await callExtractAPI(base64, "application/pdf", apiConfig.provider, cfg.model, prompt, cfg.apiKey || "");
+      if (!text) throw new Error("No response — check ANTHROPIC_API_KEY in Vercel env vars.");
       const parsed: ExtractedSpec = JSON.parse(text.replace(/```json|```/g, "").trim());
-
       setIsMtivity(parsed.source_format === "mtivity");
       if (parsed.cannot_quote) { setSpec(parsed); setStatus("cannot_quote"); return; }
-
-      // Sync convenience flat fields from substrates[0]
       const s0 = parsed.substrates?.[0];
       if (s0) {
         parsed.substrate_type       = parsed.substrate_type       ?? s0.substrate_name;
         parsed.substrate_weight_gsm = parsed.substrate_weight_gsm ?? s0.weight;
         parsed.sustainability       = parsed.sustainability        ?? s0.sustainability_accreditation;
-        parsed.sides_printed        = parsed.sides_printed         ?? (s0.sides?.length >= 2 ? "Double sided" : "Single sided");
+        parsed.sides_printed        = parsed.sides_printed         ?? String(s0.sides?.length ?? 2);
       }
-
       const validated = validateExtractedSpec(parsed) as ExtractedSpec;
       setSpec(validated);
       setStatus("done");
+      const missing = getMissingFields(validated);
+      if (missing.length > 0) { setClarifDraft(draftClarificationEmail(validated, missing)); setClarifPanel(true); }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Extraction failed — check API key.");
       setStatus("idle");
     }
   };
 
-  // ── Derived values ─────────────────────────────────────────────────────
-  const flags        = spec?.confidence_flags ?? [];
-  const isFlagged    = (k: string) => flags.some(f => f.toLowerCase().includes(k.replace(/_/g, "")));
-  const plMaterial   = lookupMaterial(spec, admin);
-  const jobDefaults  = getJobDefaults(spec, admin);
-  const deliveryRule = getDeliveryRule(spec, admin);
-  const itemDetails  = generateItemDetails(spec);
-  const hasConflict  = !!spec?.substrate_conflict;
-  const scoringOn    = !!spec?.scoring_auto_applied;
-  const gsm          = spec?.substrate_weight_gsm ?? spec?.substrates?.[0]?.weight ?? 0;
+  const sendClarification = async () => {
+    if (!spec || !clarifDraft) return;
+    setClarifSending(true);
+    try {
+      const missing = getMissingFields(spec);
+      const res = await fetch("/api/clarify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ to: clarifEmail || null, specRef: spec.job_reference, specName: spec.spec_name, createdBy: spec.created_by, missingFields: missing.map(f => f.key), send: !!clarifEmail }),
+      });
+      const data = await res.json();
+      if (data.sent) { setClarifSent(true); setClarifPanel(false); }
+      else if (data.draft) setClarifDraft({ subject: data.draft.subject ?? clarifDraft.subject, body: data.draft.textBody ?? clarifDraft.body });
+    } catch (e) { console.error(e); }
+    finally { setClarifSending(false); }
+  };
 
-  // ── Render helpers ─────────────────────────────────────────────────────
-  const Field = ({ k, label: lbl, placeholder, options, wide }: {
-    k: keyof ExtractedSpec; label: string; placeholder?: string;
-    options?: string[]; wide?: boolean;
+  // ── Derived ──────────────────────────────────────────────────────────
+  const flags      = spec?.confidence_flags ?? [];
+  const st         = (k: keyof ExtractedSpec) => deriveFieldStatus(spec ?? {}, k as string);
+  const plMat      = lookupMaterial(spec, admin);
+  const jobDef     = getJobDefaults(spec, admin);
+  const delivRule  = getDeliveryRule(spec, admin);
+  const itemDets   = generateItemDetails(spec);
+  const hasConflict = !!spec?.substrate_conflict;
+  const scoringOn  = !!spec?.scoring_auto_applied;
+  const gsm        = spec?.substrate_weight_gsm ?? spec?.substrates?.[0]?.weight ?? 0;
+  const missingNow = spec ? getMissingFields(spec) : [];
+  const isNonPrint = spec?.category_of_work && spec.category_of_work !== "Print";
+
+  // ── Field component ──────────────────────────────────────────────────
+  const F = ({ k, label: l, ph, opts, wide, type: ftype }: {
+    k: keyof ExtractedSpec; label: string; ph?: string;
+    opts?: string[]; wide?: boolean; type?: string;
   }) => {
-    const flagged = isFlagged(String(k));
-    const val = spec?.[k];
-    const strVal = val === null || val === undefined ? "" : String(val);
-    const style: React.CSSProperties = wide ? { ...fieldWrap, gridColumn: "1/-1" } : {};
+    const s = st(k);
+    const val = spec?.[k]; const str = val === null || val === undefined ? "" : String(val);
     return (
-      <div style={style}>
-        <label style={label(flagged)}>{lbl} {flagged && "⚠"}</label>
-        {options ? (
-          <select value={strVal} onChange={e => set(k, e.target.value as never)} style={inp(flagged)}>
-            {!strVal && <option value="">— Select —</option>}
-            {options.map(o => <option key={o} value={o}>{o}</option>)}
-          </select>
-        ) : (
-          <input value={strVal} placeholder={placeholder ?? "—"} style={inp(flagged)}
-            onChange={e => set(k, e.target.value as never)} />
-        )}
+      <div style={wide ? { gridColumn: "1/-1" } : {}}>
+        <Lbl status={s}>{l}</Lbl>
+        {opts
+          ? <select value={str} onChange={e => set(k, e.target.value as never)} style={inpStyle(s)}>
+              {!str && <option value="">— Select —</option>}
+              {opts.map(o => <option key={o}>{o}</option>)}
+            </select>
+          : <input type={ftype ?? "text"} value={str} placeholder={ph ?? "—"} style={inpStyle(s)}
+              onChange={e => set(k, (ftype === "number" ? (Number(e.target.value) || null) : e.target.value) as never)} />
+        }
       </div>
     );
   };
 
-  const BoolField = ({ k, label: lbl }: { k: keyof ExtractedSpec; label: string }) => (
-    <div>
-      <label style={label()}>{lbl}</label>
-      <button style={toggle(!!spec?.[k])} onClick={() => set(k, !spec?.[k] as never)}>
-        {spec?.[k] ? "Yes" : "No"}
-      </button>
+  const Bool = ({ k, label: l }: { k: keyof ExtractedSpec; label: string }) => {
+    const s = st(k);
+    return (
+      <div>
+        <Lbl status={s}>{l}</Lbl>
+        <button style={tog(!!spec?.[k])} onClick={() => set(k, !spec?.[k] as never)}>{spec?.[k] ? "Yes" : "No"}</button>
+      </div>
+    );
+  };
+
+  const NumField = ({ k, label: l, ph }: { k: keyof ExtractedSpec; label: string; ph?: string }) => {
+    const s = st(k);
+    const val = spec?.[k]; const num = val === null || val === undefined ? "" : String(val);
+    return (
+      <div>
+        <Lbl status={s}>{l}</Lbl>
+        <input type="number" value={num} placeholder={ph ?? "—"} style={inpStyle(s)}
+          onChange={e => set(k, (Number(e.target.value) || null) as never)} />
+      </div>
+    );
+  };
+
+  // ── RAG LEGEND ───────────────────────────────────────────────────────
+  const Legend = () => (
+    <div style={{ display: "flex", gap: 14, alignItems: "center", marginBottom: 14, flexWrap: "wrap" }}>
+      {(["green","amber","red"] as FieldStatus[]).map(s => (
+        <div key={s} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: T.muted }}>
+          <span style={{ width: 8, height: 8, borderRadius: "50%", background: RAG[s].dot, display: "inline-block" }} />
+          {RAG[s].label}
+        </div>
+      ))}
     </div>
   );
 
-  // ── SUBSTRATES repeatable group ────────────────────────────────────────
+  // ── SUBSTRATES section ────────────────────────────────────────────────
   const SubstratesSection = () => {
     const subs = spec?.substrates ?? [];
     return (
       <div style={card()}>
-        <div style={sectionHead()}>
-          <span style={sectionLabel}>🗂 Substrates</span>
-          <button style={{ ...addBtn, background: "rgba(255,255,255,0.12)", color: "#fff", border: "1px solid rgba(255,255,255,0.3)", marginLeft: "auto" }}
-            onClick={() => setSpec(prev => prev ? { ...prev, substrates: [...(prev.substrates ?? []), blankSub()] } : prev)}>
+        <div style={sHdr()}>
+          <span style={sLbl}>4 + 5 — Substrate & Ink</span>
+          <button style={{ ...addB, marginLeft: "auto", background: "rgba(255,255,255,0.12)", color: "#fff", border: "1px solid rgba(255,255,255,0.3)" }}
+            onClick={() => setSpec(p => p ? { ...p, substrates: [...(p.substrates ?? []), bSub()] } : p)}>
             + Add substrate
           </button>
         </div>
         {subs.map((sub, si) => (
-          <div key={si} style={{ borderBottom: si < subs.length - 1 ? `1px solid ${line}` : "none" }}>
-            {/* Substrate header */}
-            <div style={groupHead({ borderRadius: 0, background: "#F3F4F6" })}>
-              <span style={groupTitle}>Substrate {si + 1}{sub.substrate_name ? ` — ${sub.substrate_name}` : ""}</span>
-              {subs.length > 1 && (
-                <button style={removeBtn}
-                  onClick={() => setSpec(prev => prev ? { ...prev, substrates: (prev.substrates ?? []).filter((_, i) => i !== si) } : prev)}>
-                  Remove
-                </button>
-              )}
+          <div key={si} style={{ borderBottom: si < subs.length - 1 ? `1px solid ${T.line}` : "none" }}>
+            <div style={{ ...gHdr(), borderRadius: 0, background: "#F3F4F6" }}>
+              <span style={gTtl}>Substrate {si + 1}{sub.substrate_name ? ` — ${sub.substrate_name}` : ""}</span>
+              {subs.length > 1 && <button style={remB} onClick={() => setSpec(p => p ? { ...p, substrates: (p.substrates ?? []).filter((_, i) => i !== si) } : p)}>Remove</button>}
             </div>
-            <div style={innerPad}>
-              {/* Substrate fields */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(185px,1fr))", gap: 10, marginBottom: 12 }}>
-                {[
-                  ["used_as",                    "Used as",              "e.g. brochure"],
-                  ["substrate_type",             "Substrate type",       "e.g. Paper"],
-                  ["substrate_name",             "Substrate name",       "e.g. Silk Coated"],
-                  ["sustainability_accreditation","Sustainability",       "e.g. FSC Mix"],
-                  ["weight",                     "Weight (gsm)",         "e.g. 170"],
-                  ["section_page_count",         "Section page count",   "e.g. 4"],
-                  ["ink_coverage",               "Ink coverage",         ""],
-                  ["artwork_variation",          "Artwork variation",    "e.g. Different Art"],
-                  ["substrate_comments",         "Substrate comments",   ""],
-                ].map(([key, lbl, ph]) => (
+            <div style={ipad}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(185px,1fr))", gap: 10, marginBottom: 12 }}>
+                {([
+                  ["substrate_name",              "Substrate name",      "e.g. Silk Coated", false],
+                  ["sustainability_accreditation","Sustainability",      "e.g. FSC Mix",     false],
+                  ["weight",                      "Weight (gsm)",        "e.g. 250",         true],
+                  ["section_page_count",          "Section pages",       "e.g. 4",           true],
+                  ["ink_coverage",                "Ink coverage",        "",                 false],
+                  ["artwork_variation",           "Artwork variation",   "e.g. Different Art",false],
+                  ["substrate_comments",          "Comments",            "",                 false],
+                  ["special_requirements",        "Special requirements","e.g. wipeable, non-gloss",false],
+                ] as [string,string,string,boolean][]).map(([key, lb, ph, isNum]) => (
                   <div key={key}>
-                    <label style={label()}>{lbl}</label>
-                    <input value={String((sub as never)[key] ?? "")} placeholder={ph}
-                      style={inp()} onChange={e => setSub(si, { [key]: e.target.value } as Partial<MtivitySubstrate>)} />
+                    <label style={{ fontSize: 11, fontWeight: 600, display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.05em", color: T.muted }}>{lb}</label>
+                    <input type={isNum ? "number" : "text"} value={String((sub as never)[key] ?? "")} placeholder={ph}
+                      style={inpStyle(key === "special_requirements" && sub.special_requirements ? "amber" : "empty")}
+                      onChange={e => setSub(si, { [key]: isNum ? (Number(e.target.value) || null) : e.target.value } as Partial<MtivitySubstrate>)} />
                   </div>
                 ))}
               </div>
 
-              {/* SIDES repeatable group */}
+              {/* SIDES */}
               {sub.sides.map((side, di) => (
-                <div key={di} style={{ ...groupBox(), marginTop: 8 }}>
-                  <div style={groupHead()}>
-                    <span style={groupTitle}>Side {side.side_number}</span>
-                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                      {sub.sides.length > 1 && (
-                        <button style={removeBtn}
-                          onClick={() => setSub(si, { sides: sub.sides.filter((_, i) => i !== di) })}>
-                          Remove side
-                        </button>
-                      )}
-                    </div>
+                <div key={di} style={gBox()}>
+                  <div style={gHdr()}>
+                    <span style={gTtl}>Side {side.side_number}</span>
+                    {sub.sides.length > 1 && <button style={remB} onClick={() => setSub(si, { sides: sub.sides.filter((_, i) => i !== di) })}>Remove side</button>}
                   </div>
-                  <div style={{ padding: "10px 14px", display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(170px,1fr))", gap: 10 }}>
+                  <div style={{ padding: "10px 14px", display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(155px,1fr))", gap: 10 }}>
+                    <div><label style={{ ...sLbl, color: T.muted, marginBottom: 4, display: "block" }}>4-colour process</label><button style={tog(side.four_colour_process)} onClick={() => setSide(si, di, { four_colour_process: !side.four_colour_process })}>{side.four_colour_process ? "Yes" : "No"}</button></div>
+                    <div><label style={{ ...sLbl, color: T.muted, marginBottom: 4, display: "block" }}>Spot colours</label><button style={tog(side.spot_colours_required)} onClick={() => setSide(si, di, { spot_colours_required: !side.spot_colours_required })}>{side.spot_colours_required ? "Yes" : "No"}</button></div>
+                    {side.spot_colours_required && <div><label style={{ ...sLbl, color: T.muted, marginBottom: 4, display: "block" }}>No. of spot colours</label><input type="number" value={side.number_of_spot_colours ?? ""} style={inpStyle()} onChange={e => setSide(si, di, { number_of_spot_colours: Number(e.target.value) || null })} /></div>}
                     <div>
-                      <label style={label()}>4 colour process</label>
-                      <button style={toggle(side.four_colour_process)}
-                        onClick={() => setSide(si, di, { four_colour_process: !side.four_colour_process })}>
-                        {side.four_colour_process ? "Yes" : "No"}
-                      </button>
+                      <label style={{ ...sLbl, color: T.muted, marginBottom: 4, display: "block" }}>Coating required</label>
+                      <button style={tog(side.coating_required)} onClick={() => { const n = !side.coating_required; setSide(si, di, { coating_required: n, coatings: n && side.coatings.length === 0 ? [bCoat()] : side.coatings }); }}>{side.coating_required ? "Yes" : "No"}</button>
                     </div>
-                    <div>
-                      <label style={label()}>Spot colours</label>
-                      <button style={toggle(side.spot_colours_required)}
-                        onClick={() => setSide(si, di, { spot_colours_required: !side.spot_colours_required })}>
-                        {side.spot_colours_required ? "Yes" : "No"}
-                      </button>
-                    </div>
-                    {side.spot_colours_required && (
-                      <div>
-                        <label style={label()}>No. of spot colours</label>
-                        <input type="number" value={side.number_of_spot_colours ?? ""} style={inp()}
-                          onChange={e => setSide(si, di, { number_of_spot_colours: Number(e.target.value) || null })} />
-                      </div>
-                    )}
-                    <div>
-                      <label style={label()}>Coating required</label>
-                      <button style={toggle(side.coating_required)}
-                        onClick={() => {
-                          const next = !side.coating_required;
-                          setSide(si, di, { coating_required: next, coatings: next && side.coatings.length === 0 ? [blankCoating()] : side.coatings });
-                        }}>
-                        {side.coating_required ? "Yes" : "No"}
-                      </button>
-                    </div>
-                    <div style={{ gridColumn: "1/-1" }}>
-                      <input value={side.side_comments} placeholder="Side comments" style={inp()}
-                        onChange={e => setSide(si, di, { side_comments: e.target.value })} />
-                    </div>
+                    <div style={{ gridColumn: "1/-1" }}><input value={side.side_comments} placeholder="Side comments" style={inpStyle()} onChange={e => setSide(si, di, { side_comments: e.target.value })} /></div>
                   </div>
-
-                  {/* COATINGS — conditional on coating_required */}
+                  {/* COATINGS — conditional */}
                   {side.coating_required && (
                     <div style={{ padding: "0 14px 12px" }}>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: muted, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>Coatings</div>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>Coatings</div>
                       {side.coatings.map((c, ci) => (
                         <div key={ci} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: 8, marginBottom: 8, alignItems: "end" }}>
-                          <div>
-                            <label style={label()}>Coating type</label>
-                            <select value={c.coating_type} style={inp()}
-                              onChange={e => setCoating(si, di, ci, { coating_type: e.target.value })}>
+                          <div><label style={{ ...sLbl, color: T.muted, marginBottom: 4, display: "block" }}>Type</label>
+                            <select value={c.coating_type} style={inpStyle(c.coating_type ? "green" : "red")} onChange={e => setCoat(si, di, ci, { coating_type: e.target.value })}>
                               <option value="">— Select —</option>
                               {["Matte Varnish","Gloss Varnish","Gloss Laminate","Matt Laminate","Soft Touch Laminate","UV Spot","Aqueous","Silk Varnish"].map(o => <option key={o}>{o}</option>)}
-                            </select>
-                          </div>
-                          <div>
-                            <label style={label()}>Area</label>
-                            <select value={c.coating_area} style={inp()}
-                              onChange={e => setCoating(si, di, ci, { coating_area: e.target.value })}>
+                            </select></div>
+                          <div><label style={{ ...sLbl, color: T.muted, marginBottom: 4, display: "block" }}>Area</label>
+                            <select value={c.coating_area} style={inpStyle("green")} onChange={e => setCoat(si, di, ci, { coating_area: e.target.value })}>
                               {["Overall","Spot","Flood"].map(o => <option key={o}>{o}</option>)}
-                            </select>
-                          </div>
-                          <div>
-                            <label style={label()}>Comments</label>
-                            <input value={c.comments} placeholder="e.g. wipeable" style={inp()}
-                              onChange={e => setCoating(si, di, ci, { comments: e.target.value })} />
-                          </div>
-                          <button style={removeBtn}
-                            onClick={() => setSide(si, di, { coatings: side.coatings.filter((_, i) => i !== ci) })}>
-                            ✕
-                          </button>
+                            </select></div>
+                          <div><label style={{ ...sLbl, color: T.muted, marginBottom: 4, display: "block" }}>Comments</label><input value={c.comments} placeholder="e.g. wipeable" style={inpStyle(c.comments ? "amber" : "empty")} onChange={e => setCoat(si, di, ci, { comments: e.target.value })} /></div>
+                          <button style={{ ...remB, alignSelf: "flex-end" }} onClick={() => setSide(si, di, { coatings: side.coatings.filter((_, i) => i !== ci) })}>✕</button>
                         </div>
                       ))}
-                      <button style={addBtn}
-                        onClick={() => setSide(si, di, { coatings: [...side.coatings, blankCoating()] })}>
-                        + Add coating
-                      </button>
+                      <button style={addB} onClick={() => setSide(si, di, { coatings: [...side.coatings, bCoat()] })}>+ Add coating</button>
                     </div>
                   )}
                 </div>
               ))}
-              <button style={{ ...addBtn, marginTop: 6 }}
-                onClick={() => setSub(si, { sides: [...sub.sides, blankSide(sub.sides.length + 1)] })}>
-                + Add side
-              </button>
+              <button style={{ ...addB, marginTop: 6 }} onClick={() => setSub(si, { sides: [...sub.sides, bSide(sub.sides.length + 1)] })}>+ Add side</button>
             </div>
           </div>
         ))}
@@ -388,274 +340,56 @@ export default function UploadQuoteView() {
     );
   };
 
-  // ── FINISHING repeatable group — conditional ───────────────────────────
-  const FinishingSection = () => (
-    <div style={card()}>
-      <div style={sectionHead()}>
-        <span style={sectionLabel}>✂️ Finishing</span>
-      </div>
-      <div style={fieldWrap}>
-        <div>
-          <label style={label()}>Finishing required</label>
-          <button style={toggle(!!spec?.finishing_required)}
-            onClick={() => set("finishing_required", !spec?.finishing_required)}>
-            {spec?.finishing_required ? "Yes" : "No"}
-          </button>
-        </div>
-        <div>
-          <label style={label()}>Trim to size</label>
-          <button style={toggle(!!spec?.trim_to_size)}
-            onClick={() => set("trim_to_size", !spec?.trim_to_size)}>
-            {spec?.trim_to_size ? "Yes" : "No"}
-          </button>
-        </div>
-      </div>
-
-      {spec?.finishing_required && (
-        <div style={{ padding: "0 18px 14px" }}>
-          {scoringOn && (
-            <div style={{ padding: "8px 12px", background: greenBg, border: `1px solid #86efac`, borderRadius: 7, fontSize: 13, color: greenTx, marginBottom: 10 }}>
-              ✓ Scoring auto-applied — {gsm}gsm stock (Aaron&apos;s 170gsm+ rule)
-            </div>
-          )}
-          <div style={{ fontSize: 11, fontWeight: 700, color: muted, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>Finishing items</div>
-          {(spec.finishing_items ?? []).map((f, i) => (
-            <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: 8, marginBottom: 8, alignItems: "end" }}>
-              <div>
-                <label style={label()}>Finishing type</label>
-                <select value={f.finishing_type} style={inp()}
-                  onChange={e => setFinish(i, { finishing_type: e.target.value })}>
-                  <option value="">— Select —</option>
-                  {["Scoring","Folding","Guillotining","Saddle Stitch","Perfect Bound","Laminate","Gloss Laminate","Matt Laminate","Die Cut","Perforation","Tabbing","Shrink Wrap","Large Format Cutting"].map(o => <option key={o}>{o}</option>)}
-                </select>
-              </div>
-              <div>
-                <label style={label()}>Area</label>
-                <select value={f.finishing_area} style={inp()}
-                  onChange={e => setFinish(i, { finishing_area: e.target.value })}>
-                  {["Overall","Spot"].map(o => <option key={o}>{o}</option>)}
-                </select>
-              </div>
-              <div>
-                <label style={label()}>Comments</label>
-                <input value={f.comments} placeholder="Sub-option or note" style={inp()}
-                  onChange={e => setFinish(i, { comments: e.target.value })} />
-              </div>
-              <button style={removeBtn}
-                onClick={() => setSpec(prev => prev ? { ...prev, finishing_items: (prev.finishing_items ?? []).filter((_, j) => j !== i) } : prev)}>
-                ✕
-              </button>
-            </div>
-          ))}
-          <button style={addBtn}
-            onClick={() => setSpec(prev => prev ? { ...prev, finishing_items: [...(prev.finishing_items ?? []), blankFinish()] } : prev)}>
-            + Add finishing item
-          </button>
-        </div>
-      )}
-    </div>
-  );
-
-  // ── FOLDING & BINDING — conditional ───────────────────────────────────
-  const FoldingSection = () => (
-    <div style={card()}>
-      <div style={sectionHead()}><span style={sectionLabel}>📐 Folding & Binding</span></div>
-      <div style={fieldWrap}>
-        <Field k="folded_or_bound" label="Folded or bound" options={["No","Folded","Bound"]} />
-        {spec?.folded_or_bound === "Folded" && (
-          <Field k="fold_type" label="Fold type" options={["Single Fold","Z-Fold","Roll Fold","Gatefold","Concertina","French Fold","4pp","6pp","8pp","Complex Fold"]} />
-        )}
-        {spec?.folded_or_bound === "Bound" && (
-          <>
-            <Field k="binding_type" label="Binding type" options={["Saddle Stitch","Perfect Bound","Loop Stitch","Spiral Bound","Wiro Bound"]} />
-            <Field k="binding_comments" label="Binding comments" placeholder="e.g. min 8 pages" />
-          </>
-        )}
-      </div>
-    </div>
-  );
-
-  // ── PACKAGING — conditional ───────────────────────────────────────────
-  const PackagingSection = () => (
-    <div style={card()}>
-      <div style={sectionHead()}><span style={sectionLabel}>📦 Packaging</span></div>
-      <div style={fieldWrap}>
-        <BoolField k="inner_and_outer_packaging_required" label="Inner/outer packaging" />
-        {spec?.inner_and_outer_packaging_required && (
-          <>
-            <Field k="inner_packaging_material" label="Inner material" options={["Packaging Cardboard","Bubble Wrap","Foam","Tissue"]} />
-            <Field k="outer_packaging_material" label="Outer material" options={["Packaging Cardboard","Pallet","Box"]} />
-          </>
-        )}
-        <Field k="pack_in" label="Pack in" placeholder="e.g. N/A" />
-        <BoolField k="bundling_required" label="Bundling required" />
-        {/* BUNDLING — conditional on bundling_required */}
-        {spec?.bundling_required && (
-          <>
-            <Field k="bundling_type" label="Bundling type" options={["Shrink Wrap","Banded","Boxed","Palletised"]} />
-            <div>
-              <label style={label()}>Bundle quantity</label>
-              <input type="number" value={spec?.bundle_quantity ?? ""} placeholder="e.g. 25" style={inp()}
-                onChange={e => set("bundle_quantity", Number(e.target.value) || null)} />
-            </div>
-          </>
-        )}
-        <BoolField k="max_outer_packaging_size_required" label="Max outer size?" />
-        {/* MAX OUTER PACKAGING SIZE — conditional */}
-        {spec?.max_outer_packaging_size_required && (
-          <>
-            <div>
-              <label style={label()}>Max length (mm)</label>
-              <input type="number" value={spec?.max_outer_packaging_length ?? ""} style={inp()}
-                onChange={e => set("max_outer_packaging_length", Number(e.target.value) || null)} />
-            </div>
-            <div>
-              <label style={label()}>Max width (mm)</label>
-              <input type="number" value={spec?.max_outer_packaging_width ?? ""} style={inp()}
-                onChange={e => set("max_outer_packaging_width", Number(e.target.value) || null)} />
-            </div>
-            <div>
-              <label style={label()}>Max height (mm)</label>
-              <input type="number" value={spec?.max_outer_packaging_height ?? ""} style={inp()}
-                onChange={e => set("max_outer_packaging_height", Number(e.target.value) || null)} />
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
-
-  // ── DELIVERY repeatable group — conditional ───────────────────────────
-  const DeliverySection = () => (
-    <div style={card()}>
-      <div style={sectionHead()}><span style={sectionLabel}>🚚 Delivery</span></div>
-      <div style={fieldWrap}>
-        <BoolField k="delivery_required" label="Delivery required" />
-        <Field k="delivery_description" label="Delivery description" placeholder="e.g. 1 Delivery Dublin" />
-        <div>
-          <label style={label(isFlagged("delivery_location_count"))}>Location count</label>
-          <input type="number" value={spec?.delivery_location_count ?? ""} placeholder="e.g. 1" style={inp(isFlagged("delivery_location_count"))}
-            onChange={e => set("delivery_location_count", Number(e.target.value) || null)} />
-        </div>
-      </div>
-      {/* DELIVERY LOCATIONS — conditional on delivery_required */}
-      {spec?.delivery_required && (
-        <div style={{ padding: "0 18px 14px" }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: muted, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>Delivery locations</div>
-          {(spec.delivery_locations ?? []).map((loc, i) => (
-            <div key={i} style={{ ...groupBox(), marginBottom: 10 }}>
-              <div style={groupHead()}>
-                <span style={groupTitle}>Location {i + 1}{loc.city ? ` — ${loc.city}` : ""}{loc.county ? `, ${loc.county}` : ""}</span>
-                {(spec.delivery_locations ?? []).length > 1 && (
-                  <button style={removeBtn}
-                    onClick={() => setSpec(prev => prev ? { ...prev, delivery_locations: (prev.delivery_locations ?? []).filter((_, j) => j !== i) } : prev)}>
-                    Remove
-                  </button>
-                )}
-              </div>
-              <div style={{ padding: "10px 14px", display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(170px,1fr))", gap: 10 }}>
-                {[
-                  ["location_name","Location name","e.g. Head Office"],
-                  ["address",      "Address",       "Street address"],
-                  ["city",         "City",          "e.g. Dublin"],
-                  ["county",       "County",        "e.g. Dublin"],
-                  ["eircode",      "Eircode",       "e.g. D02 XY45"],
-                  ["delivery_notes","Notes",        ""],
-                ].map(([key, lbl, ph]) => (
-                  <div key={key}>
-                    <label style={label()}>{lbl}</label>
-                    <input value={String((loc as never)[key] ?? "")} placeholder={ph} style={inp()}
-                      onChange={e => setLoc(i, { [key]: e.target.value } as Partial<MtivityDeliveryLocation>)} />
-                  </div>
-                ))}
-                <div>
-                  <label style={label()}>Quantity to this location</label>
-                  <input type="number" value={loc.quantity ?? ""} style={inp()}
-                    onChange={e => setLoc(i, { quantity: Number(e.target.value) || null })} />
-                </div>
-              </div>
-            </div>
-          ))}
-          <button style={addBtn}
-            onClick={() => setSpec(prev => prev ? { ...prev, delivery_locations: [...(prev.delivery_locations ?? []), blankLocation()] } : prev)}>
-            + Add location
-          </button>
-        </div>
-      )}
-    </div>
-  );
-
   // ── MAIN RENDER ───────────────────────────────────────────────────────
   return (
     <div style={{ padding: "16px 24px", maxWidth: 1200 }}>
       <div style={{ marginBottom: 12 }}>
-        <h1 style={{ margin: "0 0 2px", fontSize: 17, fontWeight: 800, color: ink, letterSpacing: "-0.01em" }}>
-          Upload RFQ Spec
-        </h1>
-        <p style={{ margin: 0, fontSize: 13, color: muted }}>
-          Upload a Mtivity or portal spec PDF — AI extracts all fields with full conditional logic.
-        </p>
+        <h1 style={{ margin: "0 0 2px", fontSize: 17, fontWeight: 800, color: T.ink }}>Upload RFQ Spec</h1>
+        <p style={{ margin: 0, fontSize: 13, color: T.muted }}>Upload a Mtivity or portal PDF — full 11-section field mapping with RAG status indicators.</p>
       </div>
 
-      {/* ── UPLOAD ZONE ── */}
+      {/* ── UPLOAD ── */}
       {status === "idle" && (
         <>
           <div onDrop={e => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) handleFile(f); }}
             onDragOver={e => { e.preventDefault(); setDragOver(true); }} onDragLeave={() => setDragOver(false)}
             onClick={() => document.getElementById("pdf-upload")?.click()}
-            style={{ background: dragOver ? "#E8F4FA" : "#fff", border: `2px dashed ${dragOver ? forest : line}`, borderRadius: 12, padding: "28px 32px", textAlign: "center", cursor: "pointer", marginBottom: 16 }}>
-            <input id="pdf-upload" type="file" accept="application/pdf" style={{ display: "none" }}
-              onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
-            <div style={{ fontSize: 40, marginBottom: 10 }}>📄</div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: ink, marginBottom: 4 }}>
-              {file ? file.name : "Drop a spec PDF or click to browse"}
-            </div>
-            <div style={{ fontSize: 13, color: muted }}>
-              {file ? `${(file.size / 1024).toFixed(0)} KB · click to change` : "Mtivity · HH Global · Custodian · Konica"}
-            </div>
+            style={{ background: dragOver ? T.blueBg : "#fff", border: `2px dashed ${dragOver ? T.forest : T.line}`, borderRadius: 12, padding: "28px 32px", textAlign: "center", cursor: "pointer", marginBottom: 16 }}>
+            <input id="pdf-upload" type="file" accept="application/pdf" style={{ display: "none" }} onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
+            <div style={{ fontSize: 36, marginBottom: 10 }}>📄</div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: T.ink, marginBottom: 4 }}>{file ? file.name : "Drop a spec PDF or click to browse"}</div>
+            <div style={{ fontSize: 13, color: T.muted }}>{file ? `${(file.size / 1024).toFixed(0)} KB · click to change` : "Mtivity · HH Global · Custodian · Konica"}</div>
           </div>
-          {error && <div style={{ padding: "10px 16px", background: redBg, border: "1px solid #fca5a5", borderRadius: 8, color: red, fontSize: 14, marginBottom: 12 }}>{error}</div>}
-          {file && (
-            <button onClick={parseSpec} style={{ width: "100%", padding: "14px 0", borderRadius: 10, border: "none", background: forest, color: "#fff", fontSize: 16, fontWeight: 700, cursor: "pointer" }}>
-              Extract quote fields →
-            </button>
-          )}
+          {error && <div style={{ padding: "10px 16px", background: T.redBg, border: "1px solid #fca5a5", borderRadius: 8, color: T.red, fontSize: 14, marginBottom: 12 }}>{error}</div>}
+          {file && <button onClick={parseSpec} style={{ width: "100%", padding: "14px 0", borderRadius: 10, border: "none", background: T.forest, color: "#fff", fontSize: 16, fontWeight: 700, cursor: "pointer" }}>Extract quote fields →</button>}
         </>
       )}
 
       {/* ── LOADING ── */}
       {status === "loading" && (
-        <div style={{ ...card(), textAlign: "center", padding: "32px" }}>
+        <div style={{ ...card(), padding: "32px", textAlign: "center" }}>
           <div style={{ fontSize: 36, marginBottom: 10 }}>⚙️</div>
-          <div style={{ fontSize: 16, fontWeight: 700, color: ink, marginBottom: 4 }}>Reading spec…</div>
-          <div style={{ fontSize: 13, color: muted }}>Applying Mtivity field mapping and print rules to {file?.name}</div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: T.ink, marginBottom: 4 }}>Extracting spec…</div>
+          <div style={{ fontSize: 13, color: T.muted }}>Applying Mtivity field mapping, print rules, and RAG status</div>
         </div>
       )}
 
       {/* ── CANNOT QUOTE ── */}
       {status === "cannot_quote" && spec && (
-        <div style={{ ...card(), border: `1.5px solid #fca5a5` }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: red, marginBottom: 8 }}>⛔ Cannot quote this spec</div>
-          <div style={{ fontSize: 13, color: ink, lineHeight: 1.7, marginBottom: 16 }}>
-            {spec.cannot_quote_reason ?? "This RFQ does not contain a print specification."}
-          </div>
+        <div style={{ ...card(), border: `1.5px solid #fca5a5`, padding: "24px" }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: T.red, marginBottom: 8 }}>⛔ Cannot quote this spec</div>
+          <div style={{ fontSize: 13, color: T.ink, lineHeight: 1.7, marginBottom: 16 }}>{spec.cannot_quote_reason ?? "Not a print RFQ."}</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16, fontSize: 12 }}>
-            {[["Spec ref", spec.job_reference], ["Created by", spec.created_by], ["Category", spec.mtivity_product_type ?? spec.category_of_work], ["Date", spec.created_date]].map(([l, v]) => (
+            {[["Spec ref", spec.job_reference],["Created by", spec.created_by],["Category", spec.mtivity_product_type ?? spec.category_of_work],["Date", spec.created_date]].map(([l, v]) => (
               <div key={l as string} style={{ background: "#F9FAFB", borderRadius: 7, padding: "8px 12px" }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: muted, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 2 }}>{l}</div>
-                <div style={{ fontWeight: 600, color: ink }}>{v ?? "—"}</div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 2 }}>{l}</div>
+                <div style={{ fontWeight: 600, color: T.ink }}>{v ?? "—"}</div>
               </div>
             ))}
           </div>
           <div style={{ display: "flex", gap: 10 }}>
-            <button onClick={() => { setFile(null); setSpec(null); setStatus("idle"); setError(null); }}
-              style={{ padding: "9px 16px", borderRadius: 8, border: `1.5px solid ${line}`, background: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", color: muted }}>
-              ← Upload different spec
-            </button>
-            <button onClick={() => navigator.clipboard.writeText(`Hi,\n\nWe received spec ${spec.job_reference ?? ""} but it appears to be freight/logistics-only rather than a print job. Could you clarify whether this accompanies a print order?\n\nThanks,\nAzure Communications`)}
-              style={{ padding: "9px 16px", borderRadius: 8, border: `1.5px solid ${line}`, background: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", color: ink }}>
-              Copy clarification email
-            </button>
+            <button onClick={() => { setFile(null); setSpec(null); setStatus("idle"); setError(null); }} style={{ padding: "9px 16px", borderRadius: 8, border: `1px solid ${T.line}`, background: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", color: T.muted }}>← Upload different spec</button>
+            <button onClick={() => navigator.clipboard.writeText(`Hi,\n\nWe received spec ${spec.job_reference ?? ""} but it appears to be freight/logistics-only. Could you clarify whether this accompanies a print order?\n\nThanks,\nAzure Communications`)} style={{ padding: "9px 16px", borderRadius: 8, border: `1px solid ${T.line}`, background: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", color: T.ink }}>Copy clarification email</button>
           </div>
         </div>
       )}
@@ -664,219 +398,367 @@ export default function UploadQuoteView() {
       {(status === "done" || status === "approved") && spec && (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: 20, alignItems: "start" }}>
 
-          {/* LEFT — all sections */}
+          {/* ── LEFT ── */}
           <div>
-            {/* Format + creator badge */}
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 12 }}>
-              <span style={{ fontSize: 12, fontWeight: 700, padding: "3px 10px", borderRadius: 20, background: isMtivity ? blueBg : "#F3F4F6", color: isMtivity ? blueTx : muted, border: `1px solid ${isMtivity ? "#B5D4F4" : line}` }}>
+            {/* Format + creator row */}
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, padding: "3px 10px", borderRadius: 20, background: isMtivity ? T.blueBg : "#F3F4F6", color: isMtivity ? T.blue : T.muted, border: `1px solid ${isMtivity ? "#B5D4F4" : T.line}` }}>
                 {isMtivity ? "✓ Mtivity structured parser" : "General spec parser"}
               </span>
-              {spec.created_by && <span style={{ fontSize: 12, color: muted }}>Requested by {spec.created_by}{spec.created_date ? " · " + spec.created_date : ""}</span>}
+              {spec.created_by && <span style={{ fontSize: 12, color: T.muted }}>by {spec.created_by}{spec.created_date ? " · " + spec.created_date : ""}</span>}
+              {clarifSent && <span style={{ fontSize: 12, fontWeight: 600, color: T.green }}>✓ Clarification sent</span>}
+              {missingNow.length > 0 && !clarifPanel && (
+                <button onClick={() => { setClarifDraft(draftClarificationEmail(spec, missingNow)); setClarifPanel(true); }} style={{ fontSize: 12, fontWeight: 600, padding: "3px 10px", borderRadius: 20, background: T.amberBg, color: T.amberTx, border: "1px solid #fcd34d", cursor: "pointer" }}>
+                  ⚠ {missingNow.length} field{missingNow.length > 1 ? "s" : ""} missing — send clarification
+                </button>
+              )}
             </div>
+
+            {/* RAG Legend */}
+            <Legend />
 
             {/* Substrate conflict */}
             {hasConflict && (
-              <div style={{ background: redBg, border: `1.5px solid #fca5a5`, borderRadius: 8, padding: "12px 16px", marginBottom: 14 }}>
-                <div style={{ fontWeight: 700, fontSize: 13, color: red, marginBottom: 4 }}>⛔ Substrate conflict — manual selection required</div>
-                <div style={{ fontSize: 13, color: red, lineHeight: 1.6 }}>{spec.substrate_conflict_detail}</div>
+              <div style={{ background: T.redBg, border: `1.5px solid #fca5a5`, borderRadius: 8, padding: "12px 16px", marginBottom: 14 }}>
+                <div style={{ fontWeight: 700, fontSize: 13, color: T.red, marginBottom: 4 }}>⛔ Substrate conflict — manual selection required</div>
+                <div style={{ fontSize: 13, color: T.red, lineHeight: 1.6 }}>{spec.substrate_conflict_detail}</div>
+              </div>
+            )}
+
+            {/* Clarification panel */}
+            {clarifPanel && clarifDraft && (
+              <div style={{ ...card(), border: `1.5px solid #fcd34d` }}>
+                <div style={{ ...sHdr({ background: "#854F0B" }) }}>
+                  <span style={sLbl}>📧 Clarification email — {missingNow.length} field{missingNow.length > 1 ? "s" : ""} missing</span>
+                  <button style={{ marginLeft: "auto", background: "rgba(255,255,255,0.15)", border: "none", color: "#fff", borderRadius: 5, padding: "3px 10px", cursor: "pointer", fontSize: 12 }} onClick={() => setClarifPanel(false)}>✕</button>
+                </div>
+                <div style={{ padding: "14px 18px" }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
+                    {missingNow.map(f => <span key={f.key} style={{ fontSize: 12, padding: "3px 10px", borderRadius: 20, background: T.amberBg, color: T.amberTx, border: "1px solid #fcd34d" }}>{f.label}</span>)}
+                  </div>
+                  <div style={{ marginBottom: 10 }}><Lbl>Subject</Lbl><input value={clarifDraft.subject} style={inpStyle()} onChange={e => setClarifDraft(d => d ? { ...d, subject: e.target.value } : d)} /></div>
+                  <div style={{ marginBottom: 12 }}><Lbl>Body</Lbl><textarea value={clarifDraft.body} rows={9} style={{ ...inpStyle(), resize: "vertical", fontFamily: "monospace", fontSize: 12, lineHeight: 1.7 }} onChange={e => setClarifDraft(d => d ? { ...d, body: e.target.value } : d)} /></div>
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+                    <input value={clarifEmail} placeholder="Send to: requester@portal.com (optional)" style={{ ...inpStyle(), flex: 1, minWidth: 200 }} onChange={e => setClarifEmail(e.target.value)} />
+                    <button style={{ padding: "9px 18px", borderRadius: 8, border: "none", background: "#854F0B", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }} onClick={sendClarification} disabled={clarifSending}>
+                      {clarifSending ? "Sending…" : clarifEmail ? "Send email" : "Copy to clipboard"}
+                    </button>
+                    {!clarifEmail && <button style={{ padding: "9px 14px", borderRadius: 8, border: `1px solid ${T.line}`, background: "#fff", fontSize: 13, cursor: "pointer", color: T.ink }} onClick={() => navigator.clipboard.writeText(clarifDraft?.body ?? "")}>Copy body</button>}
+                  </div>
+                </div>
               </div>
             )}
 
             {/* Confidence flags */}
             {flags.length > 0 && (
-              <div style={{ background: amberBg, border: `1px solid #fcd34d`, borderRadius: 8, padding: "12px 16px", marginBottom: 14 }}>
-                <div style={{ fontWeight: 700, fontSize: 13, color: amber, marginBottom: 6 }}>⚠ Review before approving</div>
-                {flags.map((f, i) => <div key={i} style={{ fontSize: 12, color: amber, paddingLeft: 10 }}>· {f}</div>)}
+              <div style={{ background: T.amberBg, border: `1px solid #fcd34d`, borderRadius: 8, padding: "12px 16px", marginBottom: 14 }}>
+                <div style={{ fontWeight: 700, fontSize: 13, color: T.amber, marginBottom: 6 }}>⚠ Review before approving</div>
+                {flags.map((f, i) => <div key={i} style={{ fontSize: 12, color: T.amber, paddingLeft: 10 }}>· {f}</div>)}
               </div>
             )}
 
-            {/* PrintLogic auto-match */}
-            <div style={card()}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: forest, marginBottom: 10 }}>🎯 PrintLogic Auto-Match</div>
+            {/* PrintLogic match */}
+            <div style={{ ...card(), padding: "14px 18px" }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: T.forest, marginBottom: 10 }}>🎯 PrintLogic Auto-Match</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 14 }}>
                 {[
-                  ["Stock",    hasConflict ? "⛔ Conflict — select manually" : plMaterial ? plMaterial.printlogic + (plMaterial.confirmed ? "" : " ⚠") : "No match"],
-                  ["Delivery", deliveryRule ? `${deliveryRule.courier} (${deliveryRule.price})` : "—"],
+                  ["Stock",    hasConflict ? "⛔ Conflict — select manually" : plMat ? plMat.printlogic + (plMat.confirmed ? "" : " ⚠") : "No match"],
+                  ["Delivery", delivRule ? `${delivRule.courier} (${delivRule.price})` : "—"],
                   ["Job type", spec.product_type ? `✓ ${spec.product_type}` : spec.mtivity_product_type ? `⚠ ${spec.mtivity_product_type} (unmapped)` : "—"],
                 ].map(([l, v]) => (
-                  <div key={l}>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: muted, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 3 }}>{l}</div>
-                    <div style={{ fontSize: 13, color: ink }}>{v}</div>
+                  <div key={l}><div style={{ fontSize: 10, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 3 }}>{l}</div><div style={{ fontSize: 13, color: T.ink }}>{v}</div></div>
+                ))}
+              </div>
+            </div>
+
+            {/* ─── SECTION 1: JOB HEADER ─── */}
+            <div style={card()}>
+              <div style={sHdr()}><span style={sLbl}>1 — Job Header</span></div>
+              <div style={fWrap}>
+                <F k="job_reference"  label="Quote / Job reference" ph="e.g. 741086" />
+                <F k="customer_name"  label="Client name"           ph="e.g. Custodian" />
+                <F k="created_by"     label="Created by"            ph="e.g. Bryan Nicholas CPT" />
+                <F k="created_date"   label="Created on"            ph="22 May 2026" />
+                <F k="unit_of_measure" label="Unit of measure"      opts={["Each","Sets","Sheets"]} />
+                <F k="life_expectancy" label="Life expectancy"       opts={["Temporary","Permanent"]} />
+                <F k="description"    label="Description / notes"   ph="Key details from spec" wide />
+              </div>
+            </div>
+
+            {/* ─── SECTION 2: PRODUCT CLASSIFICATION ─── */}
+            <div style={card()}>
+              <div style={sHdr()}><span style={sLbl}>2 — Product Classification</span></div>
+              <div style={fWrap}>
+                <F k="category_of_work" label="Category of work" opts={["Print","Freight","Custom Goods & Services"]} />
+                {!isNonPrint && <>
+                  <F k="product_type" label="Product type (PrintLogic)" opts={["Leaflets","Brochure Body","Brochure Cover","Business Cards","Cards / Postcards","Large Format Posters","Mailing","Booklets","Letterheads","Comp Slips","Pads","Self Mailer","4 Page Leaflet","Menu","No Print"]} />
+                  {spec.mtivity_product_type && !spec.product_type && (
+                    <div style={{ gridColumn: "1/-1", padding: "8px 12px", background: T.amberBg, borderRadius: 7, fontSize: 12, color: T.amberTx }}>
+                      ⚠ &quot;{spec.mtivity_product_type}&quot; has no PrintLogic mapping — select above
+                    </div>
+                  )}
+                  <F k="finished_product_style" label="Finished style" opts={["Flat","Folded","Bound"]} />
+                </>}
+              </div>
+            </div>
+
+            {/* ─── SECTION 3: DIMENSIONS ─── */}
+            {!isNonPrint && (
+              <div style={card()}>
+                <div style={sHdr()}><span style={sLbl}>3 — Dimensions</span></div>
+                <div style={fWrap}>
+                  <NumField k="flat_size_length"     label="Flat length (mm)"     ph="e.g. 297" />
+                  <NumField k="flat_size_width"      label="Flat width (mm)"       ph="e.g. 420" />
+                  {(spec.finished_product_style === "Folded" || spec.finished_product_style === "Bound") && <>
+                    <NumField k="finished_size_length" label="Finished length (mm)" ph="e.g. 297" />
+                    <NumField k="finished_size_width"  label="Finished width (mm)"  ph="e.g. 210" />
+                  </>}
+                  <NumField k="pages" label="Total page count" ph="e.g. 4" />
+                </div>
+              </div>
+            )}
+
+            {/* ─── SECTIONS 4+5: SUBSTRATE & INK ─── */}
+            {!isNonPrint && <SubstratesSection />}
+
+            {/* ─── SECTION 5 CONTINUED: INK & ARTWORK top-level fields ─── */}
+            {!isNonPrint && (
+              <div style={card()}>
+                <div style={sHdr()}><span style={sLbl}>5 — Ink & Artwork</span></div>
+                <div style={fWrap}>
+                  <F k="sides_printed"    label="Number of sides printed" opts={["1","2"]} />
+                  <F k="ink_spec"         label="Ink spec"                opts={["Same both sides","Different each side"]} />
+                  <F k="artwork_variation" label="Art"                    opts={["Same Art","Different Art"]} />
+                  <F k="artwork_status"   label="Artwork status"          opts={["New","Repeat","Customer Supplied"]} />
+                  <Bool k="lighting_required"   label="Lighting required" />
+                  <Bool k="electronics_required" label="Electronics required" />
+                </div>
+              </div>
+            )}
+
+            {/* ─── SECTION 6: COATINGS & FINISHING ─── */}
+            {!isNonPrint && (
+              <div style={card()}>
+                <div style={sHdr()}><span style={sLbl}>6 — Coatings & Finishing</span></div>
+                <div style={fWrap}>
+                  <Bool k="finishing_required" label="Additional finishing required" />
+                </div>
+                {spec.finishing_required && (
+                  <div style={{ padding: "0 18px 14px" }}>
+                    {scoringOn && <div style={{ padding: "8px 12px", background: T.greenBg, border: "1px solid #86efac", borderRadius: 7, fontSize: 13, color: T.green, marginBottom: 10 }}>✓ Scoring auto-applied — {gsm}gsm (Aaron&apos;s 170gsm+ rule)</div>}
+                    <div style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>Finishing items</div>
+                    {(spec.finishing_items ?? []).map((f, i) => (
+                      <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: 8, marginBottom: 8, alignItems: "end" }}>
+                        <div><label style={{ ...sLbl, color: T.muted, marginBottom: 4, display: "block" }}>Type</label>
+                          <select value={f.finishing_type} style={inpStyle(f.finishing_type ? "green" : "red")} onChange={e => setFin(i, { finishing_type: e.target.value })}>
+                            <option value="">— Select —</option>
+                            {["Scoring","Folding","Guillotining","Saddle Stitch","Perfect Bound","Gloss Laminate","Matt Laminate","Soft Touch Laminate","Spot UV","Die Cut","Perforation","Tabbing","Shrink Wrap","Large Format Cutting"].map(o => <option key={o}>{o}</option>)}
+                          </select></div>
+                        <div><label style={{ ...sLbl, color: T.muted, marginBottom: 4, display: "block" }}>Area</label>
+                          <select value={f.finishing_area} style={inpStyle("green")} onChange={e => setFin(i, { finishing_area: e.target.value })}>{["Overall","Spot"].map(o => <option key={o}>{o}</option>)}</select></div>
+                        <div><label style={{ ...sLbl, color: T.muted, marginBottom: 4, display: "block" }}>Comments</label><input value={f.comments} placeholder="e.g. Gloss lam both sides" style={inpStyle(f.comments ? "amber" : "empty")} onChange={e => setFin(i, { comments: e.target.value })} /></div>
+                        <button style={{ ...remB, alignSelf: "flex-end" }} onClick={() => setSpec(p => p ? { ...p, finishing_items: (p.finishing_items ?? []).filter((_, j) => j !== i) } : p)}>✕</button>
+                      </div>
+                    ))}
+                    <button style={addB} onClick={() => setSpec(p => p ? { ...p, finishing_items: [...(p.finishing_items ?? []), bFin()] } : p)}>+ Add finishing item</button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ─── SECTION 7: FOLDING & BINDING ─── */}
+            {!isNonPrint && (
+              <div style={card()}>
+                <div style={sHdr()}><span style={sLbl}>7 — Folding & Binding</span></div>
+                <div style={fWrap}>
+                  <Bool k="trim_to_size"   label="Trim to size" />
+                  <F k="folded_or_bound"   label="Folded or bound" opts={["No","Folded","Bound"]} />
+                  {spec.folded_or_bound === "Folded" && <F k="fold_type" label="Fold type" opts={["Single Fold","Z-Fold","Roll Fold","Gatefold","Concertina","French Fold","4pp","6pp","8pp","Complex Fold"]} />}
+                  {spec.folded_or_bound === "Bound"  && <>
+                    <F k="binding_type"     label="Binding type" opts={["Saddle Stitch","Perfect Bound","Loop Stitch","Spiral Bound","Wiro Bound"]} />
+                    <F k="binding_comments" label="Binding comments" ph="e.g. min 8 pages" />
+                  </>}
+                </div>
+              </div>
+            )}
+
+            {/* ─── SECTION 8: PROOFING ─── */}
+            <div style={card()}>
+              <div style={sHdr()}><span style={sLbl}>8 — Proofing</span></div>
+              <div style={fWrap}>
+                <Bool k="proof_required" label="Proof required" />
+                {spec.proof_required && <F k="proof_type" label="Proof type" opts={["PDF:Colour","PDF","Hard Copy","Digital"]} />}
+              </div>
+            </div>
+
+            {/* ─── SECTION 9: PACKAGING ─── */}
+            <div style={card()}>
+              <div style={sHdr()}><span style={sLbl}>9 — Packaging</span></div>
+              <div style={fWrap}>
+                <Bool k="bundling_required" label="Bundling required" />
+                {spec.bundling_required && <>
+                  <F k="bundling_type" label="Bundle type" opts={["Shrink Wrap","Banded","Boxed","Palletised"]} />
+                  <NumField k="bundle_quantity" label="Bundle quantity" ph="e.g. 25" />
+                </>}
+                <Bool k="inner_packaging_required" label="Inner packaging required" />
+                {spec.inner_packaging_required && <F k="inner_packaging_material" label="Inner material" opts={["Packaging Cardboard","Bubble Wrap","Foam","Tissue Paper"]} />}
+                <Bool k="outer_packaging_required" label="Outer packaging required" />
+                {spec.outer_packaging_required && <>
+                  <F k="outer_packaging_material" label="Outer material" opts={["Packaging Cardboard","Pallet","Box","Shrink Wrap"]} />
+                  <Bool k="max_outer_packaging_size_required" label="Specify max outer size?" />
+                  {spec.max_outer_packaging_size_required && <>
+                    <NumField k="max_outer_packaging_length" label="Max length (mm)" />
+                    <NumField k="max_outer_packaging_width"  label="Max width (mm)" />
+                    <NumField k="max_outer_packaging_height" label="Max height (mm)" />
+                  </>}
+                </>}
+              </div>
+            </div>
+
+            {/* ─── SECTION 10: DELIVERY & LOGISTICS ─── */}
+            <div style={card()}>
+              <div style={sHdr()}><span style={sLbl}>10 — Delivery & Logistics</span></div>
+              <div style={fWrap}>
+                <NumField k="delivery_location_count" label="No. of delivery locations" ph="e.g. 1" />
+                <F k="delivery_region" label="Delivery region" opts={["Dublin","ROI","Northern Ireland","UK","International"]} />
+                <F k="delivery_instructions" label="Delivery instructions" ph="e.g. See shipping files" wide />
+              </div>
+              {/* DELIVERY LOCATIONS — conditional on delivery_required */}
+              <div style={{ padding: "0 18px 8px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: "0.05em" }}>Delivery locations</div>
+                  <button style={addB} onClick={() => setSpec(p => p ? { ...p, delivery_required: true, delivery_locations: [...(p.delivery_locations ?? []), bLoc()] } : p)}>+ Add location</button>
+                </div>
+                {(spec.delivery_locations ?? []).map((loc, i) => (
+                  <div key={i} style={gBox()}>
+                    <div style={gHdr()}>
+                      <span style={gTtl}>Location {i + 1}{loc.city ? ` — ${loc.city}` : ""}{loc.county ? `, ${loc.county}` : ""}</span>
+                      <button style={remB} onClick={() => setSpec(p => p ? { ...p, delivery_locations: (p.delivery_locations ?? []).filter((_, j) => j !== i) } : p)}>Remove</button>
+                    </div>
+                    <div style={{ padding: "10px 14px", display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(155px,1fr))", gap: 10 }}>
+                      {([["location_name","Location name","e.g. Head Office"],["address","Address","Street"],["city","City","e.g. Dublin"],["county","County","e.g. Dublin"],["eircode","Eircode","e.g. D02 XY45"],["delivery_notes","Notes",""]] as [string,string,string][]).map(([key, lb, ph]) => (
+                        <div key={key}><label style={{ fontSize: 11, fontWeight: 600, display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.05em", color: T.muted }}>{lb}</label><input value={String((loc as never)[key] ?? "")} placeholder={ph} style={inpStyle()} onChange={e => setLoc(i, { [key]: e.target.value } as Partial<MtivityDeliveryLocation>)} /></div>
+                      ))}
+                      <div><label style={{ fontSize: 11, fontWeight: 600, display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.05em", color: T.muted }}>Qty to here</label><input type="number" value={loc.quantity ?? ""} style={inpStyle()} onChange={e => setLoc(i, { quantity: Number(e.target.value) || null })} /></div>
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* GENERAL */}
+            {/* ─── SECTION 11: QUANTITY & VERSIONS ─── */}
             <div style={card()}>
-              <div style={sectionHead()}><span style={sectionLabel}>📋 General</span></div>
-              <div style={fieldWrap}>
-                <Field k="job_reference"  label="Spec ID"      placeholder="e.g. 741086" />
-                <Field k="spec_name"      label="Spec name"    placeholder="e.g. CIREBC1105 – A4 2pp" />
-                <Field k="customer_name"  label="Customer"     placeholder="e.g. Custodian" />
-                <Field k="description"    label="Description"  placeholder="Quantity + key details" wide />
-                <Field k="category_of_work" label="Category of work" options={["Print","Freight","Custom Goods and Services"]} />
-                <Field k="product_type"   label="PrintLogic job type" options={["Leaflets","Brochure Body","Brochure Cover","Business Cards","Cards / Postcards","Large Format Posters","Mailing","Booklets","Letterheads","Comp Slips","Pads","Self Mailer","4 Page Leaflet","Menu"]} />
-                {spec.mtivity_product_type && !spec.product_type && (
-                  <div style={{ gridColumn: "1/-1", padding: "8px 12px", background: amberBg, borderRadius: 7, fontSize: 12, color: amber }}>
-                    ⚠ Mtivity product type "{spec.mtivity_product_type}" has no PrintLogic mapping yet — select manually above
-                  </div>
-                )}
-                <div>
-                  <label style={label()}>Quantity</label>
-                  <input type="number" value={spec?.quantity ?? ""} placeholder="e.g. 500" style={inp(isFlagged("quantity"))}
-                    onChange={e => set("quantity", Number(e.target.value) || null)} />
-                </div>
-                <Field k="life_expectancy" label="Life expectancy" options={["Temporary","Permanent"]} />
-                <Field k="finished_product_style" label="Product style" options={["Flat","Folded","Bound"]} />
+              <div style={sHdr()}><span style={sLbl}>11 — Quantity & Versions</span></div>
+              <div style={fWrap}>
+                <NumField k="quantity"          label="Total quantity"    ph="e.g. 1100" />
+                <NumField k="number_of_versions" label="Number of versions" ph="e.g. 2" />
+                {(spec.number_of_versions ?? 1) > 1 && <F k="split_per_version" label="Split per version" ph="e.g. 50/50 or 600/500" />}
+                <F k="calculation_method" label="Calculation method" opts={["Quantity","Fixed Price","Rate Card"]} />
               </div>
             </div>
 
-            {/* DIMENSIONS */}
+            {/* NOTES */}
             <div style={card()}>
-              <div style={sectionHead()}><span style={sectionLabel}>📐 Dimensions</span></div>
-              <div style={fieldWrap}>
-                <div>
-                  <label style={label()}>Flat length (mm)</label>
-                  <input type="number" value={spec?.flat_size_length ?? ""} style={inp()} onChange={e => set("flat_size_length", Number(e.target.value) || null)} />
-                </div>
-                <div>
-                  <label style={label()}>Flat width (mm)</label>
-                  <input type="number" value={spec?.flat_size_width ?? ""} style={inp()} onChange={e => set("flat_size_width", Number(e.target.value) || null)} />
-                </div>
-                <div>
-                  <label style={label()}>Finished length (mm)</label>
-                  <input type="number" value={spec?.finished_size_length ?? ""} style={inp()} onChange={e => set("finished_size_length", Number(e.target.value) || null)} />
-                </div>
-                <div>
-                  <label style={label()}>Finished width (mm)</label>
-                  <input type="number" value={spec?.finished_size_width ?? ""} style={inp()} onChange={e => set("finished_size_width", Number(e.target.value) || null)} />
-                </div>
-                <div>
-                  <label style={label()}>Total pages</label>
-                  <input type="number" value={spec?.pages ?? ""} style={inp()} onChange={e => set("pages", Number(e.target.value) || null)} />
-                </div>
-              </div>
-            </div>
-
-            {/* PREPRESS */}
-            <div style={card()}>
-              <div style={sectionHead()}><span style={sectionLabel}>🎨 Prepress</span></div>
-              <div style={fieldWrap}>
-                <Field k="artwork_status" label="Artwork" options={["New","Repeat","Customer Supplied"]} />
-                <div>
-                  <label style={label()}>Proof required</label>
-                  <button style={toggle(!!spec?.proof_required)} onClick={() => set("proof_required", !spec?.proof_required)}>
-                    {spec?.proof_required ? "Yes" : "No"}
-                  </button>
-                </div>
-                {spec?.proof_required && <Field k="proof_type" label="Proof type" options={["PDF:Colour","PDF","Hard Copy","Digital"]} />}
-              </div>
-            </div>
-
-            {/* SUBSTRATES repeatable */}
-            <SubstratesSection />
-
-            {/* FOLDING & BINDING conditional */}
-            <FoldingSection />
-
-            {/* FINISHING conditional */}
-            <FinishingSection />
-
-            {/* PACKAGING conditional */}
-            <PackagingSection />
-
-            {/* DELIVERY conditional + repeatable locations */}
-            <DeliverySection />
-
-            {/* SPECIAL NOTES */}
-            <div style={card()}>
-              <div style={sectionHead()}><span style={sectionLabel}>📝 Notes</span></div>
-              <div style={fieldWrap}>
-                <Field k="special_notes" label="Special notes" placeholder="Any other quoting-relevant info" wide />
-              </div>
+              <div style={sHdr()}><span style={sLbl}>📝 Special Notes</span></div>
+              <div style={fWrap}><F k="special_notes" label="Special notes" ph="Any other quoting-relevant info" wide /></div>
             </div>
 
             {/* ACTIONS */}
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 4 }}>
-              <button onClick={() => { setFile(null); setSpec(null); setStatus("idle"); setError(null); setIsMtivity(false); }}
-                style={{ padding: "11px 18px", borderRadius: 10, border: `1.5px solid ${line}`, background: "#fff", color: muted, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
-                ← New spec
-              </button>
-              <button onClick={() => navigator.clipboard.writeText(JSON.stringify(spec, null, 2))}
-                style={{ padding: "11px 18px", borderRadius: 10, border: `1.5px solid ${line}`, background: "#fff", color: muted, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
-                Export JSON
-              </button>
-              {status === "done" && !hasConflict && (
-                <button onClick={() => setStatus("approved")}
-                  style={{ flex: 1, minWidth: 180, padding: "11px 18px", borderRadius: 10, border: "none", background: forest, color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
-                  ✓ Approve — Ready for PrintLogic
-                </button>
+              <button onClick={() => { setFile(null); setSpec(null); setStatus("idle"); setError(null); setIsMtivity(false); setClarifPanel(false); setClarifSent(false); }} style={{ padding: "11px 18px", borderRadius: 10, border: `1.5px solid ${T.line}`, background: "#fff", color: T.muted, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>← New spec</button>
+              <button onClick={() => navigator.clipboard.writeText(JSON.stringify(spec, null, 2))} style={{ padding: "11px 18px", borderRadius: 10, border: `1.5px solid ${T.line}`, background: "#fff", color: T.muted, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Export JSON</button>
+              {status === "done" && !hasConflict && missingNow.length === 0 && (
+                <button onClick={() => setStatus("approved")} style={{ flex: 1, minWidth: 180, padding: "11px 18px", borderRadius: 10, border: "none", background: T.forest, color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>✓ Approve — Ready for PrintLogic</button>
+              )}
+              {status === "done" && !hasConflict && missingNow.length > 0 && (
+                <div style={{ flex: 1, padding: "11px 18px", borderRadius: 10, background: T.amberBg, border: `1px solid #fcd34d`, fontSize: 13, color: T.amberTx, display: "flex", alignItems: "center", gap: 10 }}>
+                  ⚠ {missingNow.length} field{missingNow.length > 1 ? "s" : ""} missing
+                  <button onClick={() => { setClarifDraft(draftClarificationEmail(spec, missingNow)); setClarifPanel(true); }} style={{ padding: "5px 12px", borderRadius: 6, border: "1px solid #fcd34d", background: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", color: T.amberTx }}>Send clarification</button>
+                </div>
               )}
               {status === "done" && hasConflict && (
-                <div style={{ flex: 1, padding: "11px 18px", borderRadius: 10, background: redBg, border: `1px solid #fca5a5`, fontSize: 13, color: red, display: "flex", alignItems: "center" }}>
-                  ⛔ Resolve substrate conflict before approving
-                </div>
+                <div style={{ flex: 1, padding: "11px 18px", borderRadius: 10, background: T.redBg, border: `1px solid #fca5a5`, fontSize: 13, color: T.red, display: "flex", alignItems: "center" }}>⛔ Resolve substrate conflict before approving</div>
               )}
             </div>
 
             {status === "approved" && (
-              <div style={{ ...card(), border: `1.5px solid #86efac`, marginTop: 14 }}>
-                <div style={{ fontWeight: 700, color: forest, marginBottom: 12, fontSize: 15 }}>✅ Approved — PrintLogic Checklist</div>
+              <div style={{ ...card(), border: `1.5px solid #86efac`, padding: "20px", marginTop: 14 }}>
+                <div style={{ fontWeight: 700, color: T.forest, marginBottom: 12, fontSize: 15 }}>✅ Approved — PrintLogic Checklist</div>
                 {[
                   `Customer: ${spec.customer_name ?? "[check email]"}`,
-                  `Job type: ${spec.product_type ?? "[confirm]"} · Qty: ${spec.quantity ?? "[confirm]"}`,
-                  `Size: ${spec.finished_size_length && spec.finished_size_width ? `${spec.finished_size_length}×${spec.finished_size_width}mm` : "[confirm]"}`,
-                  `Stock: ${plMaterial?.printlogic ?? "[Aaron to select]"}`,
+                  `Job type: ${spec.product_type ?? "[confirm]"} · Qty: ${spec.quantity ?? "[confirm]"}${(spec.number_of_versions ?? 1) > 1 ? ` (${spec.number_of_versions} versions — ${spec.split_per_version ?? "split TBC"})` : ""}`,
+                  `Size: ${spec.finished_size_length && spec.finished_size_width ? `${spec.finished_size_length}×${spec.finished_size_width}mm` : spec.flat_size_length ? `${spec.flat_size_length}×${spec.flat_size_width}mm flat` : "[confirm]"}`,
+                  `Stock: ${plMat?.printlogic ?? "[Aaron to select]"}`,
                   `Sides: ${spec.sides_printed ?? "[confirm]"} · ${scoringOn ? "✓ Scoring auto-applied" : "Check finishing"}`,
-                  `Delivery: ${deliveryRule ? `${deliveryRule.courier} (${deliveryRule.price})` : "[confirm]"}`,
+                  `Delivery: ${delivRule ? `${delivRule.courier} (${delivRule.price})` : "[confirm]"} · Region: ${spec.delivery_region ?? "[confirm]"}`,
                   `Paste Item Details (right panel) → Calculate → Review margin → Send`,
                 ].map((s, i) => (
-                  <div key={i} style={{ display: "flex", gap: 10, padding: "7px 0", borderBottom: i < 6 ? `1px solid ${line}` : "none", fontSize: 13 }}>
-                    <span style={{ color: forest, fontWeight: 700, minWidth: 20 }}>{i + 1}.</span><span>{s}</span>
+                  <div key={i} style={{ display: "flex", gap: 10, padding: "7px 0", borderBottom: i < 6 ? `1px solid ${T.line}` : "none", fontSize: 13 }}>
+                    <span style={{ color: T.forest, fontWeight: 700, minWidth: 20 }}>{i + 1}.</span><span>{s}</span>
                   </div>
                 ))}
               </div>
             )}
           </div>
 
-          {/* RIGHT — sticky preview */}
+          {/* ── RIGHT — sticky preview ── */}
           <div style={{ position: "sticky", top: 20 }}>
+            {/* Item Details */}
             <div style={{ background: "#0a1a10", borderRadius: 12, overflow: "hidden", marginBottom: 12 }}>
-              <div style={{ background: forest, padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ background: T.forest, padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: lime, textTransform: "uppercase", letterSpacing: "0.08em" }}>🖨 PrintLogic Item Details</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: T.lime, textTransform: "uppercase", letterSpacing: "0.08em" }}>🖨 PrintLogic Item Details</div>
                   <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 2 }}>Live · Aaron&apos;s format</div>
                 </div>
-                <button onClick={() => { navigator.clipboard.writeText(itemDetails); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
-                  style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.25)", color: "#fff", borderRadius: 6, padding: "5px 12px", cursor: "pointer", fontSize: 11, fontWeight: 600 }}>
+                <button onClick={() => { navigator.clipboard.writeText(itemDets); setCopied(true); setTimeout(() => setCopied(false), 2000); }} style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.25)", color: "#fff", borderRadius: 6, padding: "5px 12px", cursor: "pointer", fontSize: 11, fontWeight: 600 }}>
                   {copied ? "✓ Copied" : "Copy"}
                 </button>
               </div>
-              <pre style={{ margin: 0, padding: "16px", fontFamily: "monospace", fontSize: 12, color: "#a8e6b4", lineHeight: 1.9, whiteSpace: "pre-wrap", maxHeight: 340, overflowY: "auto" }}>
-                {itemDetails || "— Complete fields to generate —"}
+              <pre style={{ margin: 0, padding: "16px", fontFamily: "monospace", fontSize: 12, color: "#a8e6b4", lineHeight: 1.9, whiteSpace: "pre-wrap", maxHeight: 300, overflowY: "auto" }}>
+                {itemDets || "— Complete fields to generate —"}
               </pre>
             </div>
 
-            {/* Summary panel */}
+            {/* RAG Summary */}
             <div style={{ ...card(), padding: "14px 16px" }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: forest, marginBottom: 10 }}>Quick summary</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: T.forest, marginBottom: 10 }}>Field status summary</div>
+              {(() => {
+                const fm = spec.field_status ?? {};
+                const counts = { green: 0, amber: 0, red: 0, empty: 0 };
+                Object.values(fm).forEach(v => { if (v in counts) counts[v as keyof typeof counts]++; });
+                return (
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
+                    {(["green","amber","red","empty"] as const).filter(s => s !== "empty").map(s => (
+                      <div key={s} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 8, background: RAG[s].bg, border: `1px solid ${RAG[s].border}` }}>
+                        <span style={{ width: 8, height: 8, borderRadius: "50%", background: RAG[s].dot, display: "inline-block", flexShrink: 0 }} />
+                        <div>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: s === "green" ? T.green : s === "amber" ? T.amber : T.red }}>{RAG[s].label}</div>
+                          <div style={{ fontSize: 18, fontWeight: 700, color: T.ink, lineHeight: 1 }}>{counts[s]}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+              <div style={{ fontSize: 12, fontWeight: 700, color: T.forest, marginBottom: 8 }}>Quick summary</div>
               {[
-                ["Spec ref",    spec.job_reference],
+                ["Spec ref",   spec.job_reference],
                 ["Customer",   spec.customer_name],
                 ["Job type",   spec.product_type ?? (spec.mtivity_product_type ? "⚠ " + spec.mtivity_product_type : null)],
-                ["Qty",        spec.quantity],
-                ["Finished",   spec.finished_size_length && spec.finished_size_width ? `${spec.finished_size_length}×${spec.finished_size_width}mm` : null],
+                ["Qty",        spec.quantity ? `${spec.quantity}${(spec.number_of_versions ?? 1) > 1 ? ` (${spec.number_of_versions} ver)` : ""}` : null],
+                ["Size",       spec.finished_size_length && spec.finished_size_width ? `${spec.finished_size_length}×${spec.finished_size_width}mm` : null],
                 ["Pages",      spec.pages ? `${spec.pages}pp` : null],
                 ["Stock",      (gsm && spec.substrate_type) ? `${gsm}gsm ${spec.substrate_type}` : null],
-                ["Sides",      spec.sides_printed],
+                ["Sides",      spec.sides_printed ? `${spec.sides_printed} side${Number(spec.sides_printed) > 1 ? "s" : ""}` : null],
                 ["Finishing",  spec.finishing_items?.map(f => f.finishing_type).filter(Boolean).join(", ") || null],
                 ["Bundling",   spec.bundling_required ? `${spec.bundling_type ?? ""} ${spec.bundle_quantity ? "×" + spec.bundle_quantity : ""}`.trim() : null],
-                ["Delivery",   deliveryRule ? `${deliveryRule.courier} (${deliveryRule.price})` : null],
+                ["Region",     spec.delivery_region],
+                ["Delivery",   delivRule ? `${delivRule.courier} (${delivRule.price})` : null],
+                ["Missing",    missingNow.length > 0 ? `⚠ ${missingNow.length} field${missingNow.length > 1 ? "s" : ""}` : null],
               ].map(([l, v]) => (
-                <div key={l as string} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: `1px solid ${line}`, fontSize: 12 }}>
-                  <span style={{ color: muted, fontWeight: 500 }}>{l}</span>
-                  <span style={{ color: v ? ink : "rgba(0,0,0,0.18)", fontWeight: v ? 600 : 400, textAlign: "right", maxWidth: "58%" }}>{v ?? "—"}</span>
+                <div key={l as string} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: `1px solid ${T.line}`, fontSize: 12 }}>
+                  <span style={{ color: T.muted, fontWeight: 500 }}>{l}</span>
+                  <span style={{ color: v ? (String(l) === "Missing" ? T.amber : T.ink) : "rgba(0,0,0,0.15)", fontWeight: v ? 600 : 400, textAlign: "right", maxWidth: "58%" }}>{v ?? "—"}</span>
                 </div>
               ))}
             </div>

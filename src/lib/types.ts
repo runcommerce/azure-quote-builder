@@ -1,4 +1,4 @@
-// ── BRAND TOKENS (azurecomm.ie) ─────────────────────────────────────────
+// ── BRAND TOKENS ─────────────────────────────────────────────────────────
 export const B = {
   navy:        "#183230",
   dark:        "#23282D",
@@ -19,7 +19,7 @@ export const B = {
   greenLight:  "#E9F5F0",
 } as const;
 
-// ── SHARED TYPES ─────────────────────────────────────────────────────────
+// ── ADMIN CONFIG TYPES ────────────────────────────────────────────────────
 export interface PortalCustomer {
   id: string;
   name: string;
@@ -77,6 +77,17 @@ export interface ApiConfig {
   custom: ApiProviderConfig;
 }
 
+// ── RAG FIELD STATUS ──────────────────────────────────────────────────────
+// GREEN  = populated from spec with high confidence
+// AMBER  = guessed / inferred / low confidence
+// RED    = required but blank
+// EMPTY  = not required, left blank (no colour)
+export type FieldStatus = "green" | "amber" | "red" | "empty";
+
+export interface FieldStatusMap {
+  [fieldKey: string]: FieldStatus;
+}
+
 // ── MTIVITY NESTED TYPES ─────────────────────────────────────────────────
 
 export interface MtivityCoating {
@@ -108,6 +119,7 @@ export interface MtivitySubstrate {
   thickness_unit: string;
   section_page_count: number | null;
   substrate_comments: string;
+  special_requirements: string;   // NEW — non-gloss, wipeable, clinical use notes
   ink_coverage: string;
   artwork_variation: string;
   sides: MtivitySide[];
@@ -133,100 +145,114 @@ export interface MtivityDeliveryLocation {
 // ── EXTRACTED SPEC ────────────────────────────────────────────────────────
 
 export interface ExtractedSpec {
-  // Source metadata
+  // ── Source metadata ────────────────────────────────────────────────────
   source_format: "mtivity" | "generic" | null;
   cannot_quote: boolean | null;
   cannot_quote_reason: string | null;
-
-  // Substrate conflict (e.g. silk vs writable)
   substrate_conflict: boolean | null;
   substrate_conflict_detail: string | null;
 
-  // General
-  job_reference: string | null;       // spec_id
+  // ── 1. Job Header ──────────────────────────────────────────────────────
+  job_reference: string | null;         // Quote / Job Reference
   spec_name: string | null;
-  customer_name: string | null;
+  customer_name: string | null;         // Client Name
   created_by: string | null;
   created_date: string | null;
-  unit_of_measure: string | null;
-  description: string | null;
+  unit_of_measure: string | null;       // always "Each"
+  life_expectancy: string | null;       // Temporary | Permanent
+  description: string | null;           // Description / Notes
+
+  // internal Mtivity metadata (not shown as fields)
   spec_type: string | null;
   form_type: string | null;
 
-  // Item details
-  category_of_work: string | null;
-  product_type: string | null;
-  mtivity_product_type: string | null; // raw label before PrintLogic mapping
-  life_expectancy: string | null;
+  // ── 2. Product Classification ──────────────────────────────────────────
+  category_of_work: string | null;      // Print | Freight | Custom Goods...
+  product_type: string | null;          // PrintLogic job type (mapped)
+  mtivity_product_type: string | null;  // raw Mtivity label pre-mapping
+  finished_product_style: string | null; // Flat | Folded | Bound
 
-  // Product
-  finished_product_style: string | null;  // Flat | Folded | Bound
-  main_substrate: string | null;
-  lighting_required: boolean;
-  electronics_required: boolean;
-
-  // Dimensions
+  // ── 3. Dimensions — conditional on category_of_work = Print ───────────
   measurement_unit: string;
   flat_size_length: number | null;
   flat_size_width: number | null;
-  finished_size_length: number | null;
+  finished_size_length: number | null;  // conditional: Folded or Bound
   finished_size_width: number | null;
-  pages: number | null;
+  pages: number | null;                 // Total Page Count
 
-  // Quantity (from description or delivery)
-  quantity: number | null;
+  // ── 4. Substrate — conditional on category_of_work = Print ────────────
+  substrate_type: string | null;        // convenience from substrates[0]
+  substrate_weight_gsm: number | null;  // convenience from substrates[0]
+  sustainability: string | null;        // convenience from substrates[0]
+  substrate_special_requirements: string | null; // NEW — wipeable, non-gloss etc.
+  main_substrate: string | null;        // Paper | Board | Synthetic
 
-  // Substrates[] — repeatable group
+  // Substrates repeatable group
   substrates: MtivitySubstrate[];
 
-  // Convenience flat fields derived from substrates[0] for lookups
-  substrate_type: string | null;
-  substrate_weight_gsm: number | null;
-  sustainability: string | null;
-  sides_printed: string | null;
+  // ── 5. Ink & Artwork — conditional on category_of_work = Print ─────────
+  sides_printed: string | null;         // "1" or "2" (number of sides)
+  ink_spec: string | null;              // NEW — "Same both sides" | "Different each side"
+  artwork_variation: string | null;     // NEW top-level — "Different Art" | "Same Art"
+  artwork_status: string | null;        // New | Repeat | Customer Supplied
+  lighting_required: boolean;
+  electronics_required: boolean;
 
-  // Prepress
-  artwork_status: string | null;        // artwork field
-  proof_required: boolean;
-  proof_type: string | null;
-
-  // Folding & binding — conditional
-  trim_to_size: boolean;
-  folded_or_bound: string | null;       // "Folded" | "Bound" | "No"
-  fold_type: string | null;             // shown when folded_or_bound = "Folded"
-  binding_type: string | null;          // shown when folded_or_bound = "Bound"
-  binding_comments: string | null;
-
-  // Finishing — conditional on finishing_required
-  finishing_required: boolean;
+  // ── 6. Coatings & Finishing ─────────────────────────────────────────────
+  // Coatings live in substrates[].sides[].coatings[]
+  finishing_required: boolean;          // Additional Finishing Required
   finishing_items: MtivityFinishingItem[];
-  // Convenience: auto-populated scoring rule
   scoring_auto_applied: boolean;
 
-  // Packaging
-  inner_and_outer_packaging_required: boolean;
-  inner_packaging_material: string | null;
-  outer_packaging_material: string | null;
-  max_outer_packaging_size_required: boolean;
-  max_outer_packaging_length: number | null;  // shown when max_outer_packaging_size_required
+  // ── 7. Folding & Binding ─────────────────────────────────────────────────
+  trim_to_size: boolean;
+  folded_or_bound: string | null;       // No | Folded | Bound
+  fold_type: string | null;             // conditional: folded_or_bound = Folded
+  binding_type: string | null;          // conditional: folded_or_bound = Bound
+  binding_comments: string | null;
+
+  // ── 8. Proofing ───────────────────────────────────────────────────────────
+  proof_required: boolean;
+  proof_type: string | null;            // conditional: proof_required = true
+
+  // ── 9. Packaging ──────────────────────────────────────────────────────────
+  bundling_required: boolean;
+  bundling_type: string | null;         // conditional: bundling_required
+  bundle_quantity: number | null;       // conditional: bundling_required
+  inner_packaging_required: boolean;    // NEW — split from combined
+  inner_packaging_material: string | null; // conditional: inner_packaging_required
+  outer_packaging_required: boolean;    // NEW — split from combined
+  outer_packaging_material: string | null; // conditional: outer_packaging_required
+  max_outer_packaging_size_required: boolean; // conditional: outer_packaging_required
+  max_outer_packaging_length: number | null;
   max_outer_packaging_width: number | null;
   max_outer_packaging_height: number | null;
   max_outer_packaging_unit: string;
   pack_in: string | null;
-  bundling_required: boolean;
-  bundling_type: string | null;         // shown when bundling_required
-  bundle_quantity: number | null;       // shown when bundling_required
 
-  // Delivery — conditional on delivery_required
-  delivery_required: boolean;
-  delivery_description: string | null;
+  // kept for backward compat — derived from the two new booleans
+  inner_and_outer_packaging_required: boolean;
+
+  // ── 10. Delivery & Logistics — always shown ────────────────────────────
   delivery_location_count: number | null;
-  delivery_locations: MtivityDeliveryLocation[]; // shown when delivery_required
+  delivery_region: string | null;       // NEW — ROI | Dublin | UK | International
+  delivery_instructions: string | null; // NEW — renamed from delivery_description
+  delivery_description: string | null;  // kept for compat
+  delivery_required: boolean;           // kept for location group gate
+  delivery_locations: MtivityDeliveryLocation[];
 
-  // Calculation
-  calculation_method: string | null;
+  // ── 11. Quantity & Versions — always shown ─────────────────────────────
+  quantity: number | null;              // Total Quantity
+  number_of_versions: number | null;    // NEW
+  split_per_version: string | null;     // NEW — conditional: number_of_versions > 1
+  calculation_method: string | null;    // Quantity | Fixed
 
-  // Audit
+  // ── Audit ──────────────────────────────────────────────────────────────
   confidence_flags: string[];
   special_notes: string | null;
+
+  // ── RAG field status map ───────────────────────────────────────────────
+  // Populated by AI alongside extracted values.
+  // Keys match field names above. Values: "green" | "amber" | "red" | "empty"
+  field_status: FieldStatusMap;
 }
