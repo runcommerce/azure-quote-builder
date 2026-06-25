@@ -77,42 +77,156 @@ export interface ApiConfig {
   custom: ApiProviderConfig;
 }
 
-export interface ExtractedSpec {
-  // ── Source metadata ───────────────────────────────────────────────────
-  source_format: "mtivity" | "generic" | null;   // NEW — format detected
-  cannot_quote:  boolean | null;                  // NEW — non-print flag
-  cannot_quote_reason: string | null;             // NEW — reason if true
-  // ── Substrate conflict flags ──────────────────────────────────────────
-  substrate_conflict: boolean | null;             // NEW — e.g. silk but writable
-  substrate_conflict_detail: string | null;       // NEW — human-readable explanation
-  // ── Core fields ──────────────────────────────────────────────────────
-  job_reference: string | null;
-  customer_name: string | null;
-  created_by: string | null;                      // NEW — Mtivity spec creator name
-  created_date: string | null;                    // NEW — Mtivity created date
-  product_type: string | null;
-  mtivity_product_type: string | null;            // NEW — raw Mtivity label pre-mapping
+// ── MTIVITY NESTED TYPES ─────────────────────────────────────────────────
+
+export interface MtivityCoating {
+  coating_type: string;
+  coating_area: string;
+  comments: string;
+}
+
+export interface MtivitySide {
+  side_number: number;
+  four_colour_process: boolean;
+  spot_colours_required: boolean;
+  number_of_spot_colours: number | null;
+  coating_required: boolean;
+  number_of_coatings: number | null;
+  coatings: MtivityCoating[];
+  side_comments: string;
+}
+
+export interface MtivitySubstrate {
+  used_as: string;
+  substrate_type: string;
+  substrate_name: string;
+  sustainability_accreditation: string;
+  measured_by: string;
+  weight: number | null;
+  weight_unit: string;
+  thickness: number | null;
+  thickness_unit: string;
+  section_page_count: number | null;
+  substrate_comments: string;
+  ink_coverage: string;
+  artwork_variation: string;
+  sides: MtivitySide[];
+}
+
+export interface MtivityFinishingItem {
+  finishing_type: string;
+  finishing_area: string;
+  comments: string;
+}
+
+export interface MtivityDeliveryLocation {
+  location_name: string;
+  address: string;
+  city: string;
+  county: string;
+  country: string;
+  eircode: string;
   quantity: number | null;
-  flat_size_mm: string | null;
-  finished_size_mm: string | null;
+  delivery_notes: string;
+}
+
+// ── EXTRACTED SPEC ────────────────────────────────────────────────────────
+
+export interface ExtractedSpec {
+  // Source metadata
+  source_format: "mtivity" | "generic" | null;
+  cannot_quote: boolean | null;
+  cannot_quote_reason: string | null;
+
+  // Substrate conflict (e.g. silk vs writable)
+  substrate_conflict: boolean | null;
+  substrate_conflict_detail: string | null;
+
+  // General
+  job_reference: string | null;       // spec_id
+  spec_name: string | null;
+  customer_name: string | null;
+  created_by: string | null;
+  created_date: string | null;
+  unit_of_measure: string | null;
+  description: string | null;
+  spec_type: string | null;
+  form_type: string | null;
+
+  // Item details
+  category_of_work: string | null;
+  product_type: string | null;
+  mtivity_product_type: string | null; // raw label before PrintLogic mapping
+  life_expectancy: string | null;
+
+  // Product
+  finished_product_style: string | null;  // Flat | Folded | Bound
+  main_substrate: string | null;
+  lighting_required: boolean;
+  electronics_required: boolean;
+
+  // Dimensions
+  measurement_unit: string;
+  flat_size_length: number | null;
+  flat_size_width: number | null;
+  finished_size_length: number | null;
+  finished_size_width: number | null;
   pages: number | null;
+
+  // Quantity (from description or delivery)
+  quantity: number | null;
+
+  // Substrates[] — repeatable group
+  substrates: MtivitySubstrate[];
+
+  // Convenience flat fields derived from substrates[0] for lookups
   substrate_type: string | null;
   substrate_weight_gsm: number | null;
   sustainability: string | null;
   sides_printed: string | null;
-  colours_side_1: string | null;
-  colours_side_2: string | null;
-  coating_side_1: string | null;
-  coating_side_2: string | null;
-  fold_type: string | null;
-  binding: string | null;
-  finishing_other: string | null;
-  bundling: string | null;
-  packaging: string | null;
-  proof_required: string | null;
-  artwork_status: string | null;
-  delivery_locations: number | null;
-  delivery_address: string | null;
-  special_notes: string | null;
+
+  // Prepress
+  artwork_status: string | null;        // artwork field
+  proof_required: boolean;
+  proof_type: string | null;
+
+  // Folding & binding — conditional
+  trim_to_size: boolean;
+  folded_or_bound: string | null;       // "Folded" | "Bound" | "No"
+  fold_type: string | null;             // shown when folded_or_bound = "Folded"
+  binding_type: string | null;          // shown when folded_or_bound = "Bound"
+  binding_comments: string | null;
+
+  // Finishing — conditional on finishing_required
+  finishing_required: boolean;
+  finishing_items: MtivityFinishingItem[];
+  // Convenience: auto-populated scoring rule
+  scoring_auto_applied: boolean;
+
+  // Packaging
+  inner_and_outer_packaging_required: boolean;
+  inner_packaging_material: string | null;
+  outer_packaging_material: string | null;
+  max_outer_packaging_size_required: boolean;
+  max_outer_packaging_length: number | null;  // shown when max_outer_packaging_size_required
+  max_outer_packaging_width: number | null;
+  max_outer_packaging_height: number | null;
+  max_outer_packaging_unit: string;
+  pack_in: string | null;
+  bundling_required: boolean;
+  bundling_type: string | null;         // shown when bundling_required
+  bundle_quantity: number | null;       // shown when bundling_required
+
+  // Delivery — conditional on delivery_required
+  delivery_required: boolean;
+  delivery_description: string | null;
+  delivery_location_count: number | null;
+  delivery_locations: MtivityDeliveryLocation[]; // shown when delivery_required
+
+  // Calculation
+  calculation_method: string | null;
+
+  // Audit
   confidence_flags: string[];
+  special_notes: string | null;
 }
