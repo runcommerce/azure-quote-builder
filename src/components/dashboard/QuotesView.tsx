@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import type { View } from "./tokens";
 import type { QuoteRecord, QuoteStatus } from "@/lib/types";
-import { loadQuotes, saveQuote, deleteQuote } from "@/lib/quotes";
+import { formatEur } from "@/lib/pricing";
 
 // ── STATUS CONFIG ─────────────────────────────────────────────────────────
 const STATUS: Record<QuoteStatus, { label: string; dot: string; bg: string; tx: string }> = {
@@ -16,10 +16,14 @@ const TABS: Array<QuoteStatus | "all"> = ["all", "incomplete", "sent", "won", "l
 const TAB_LABELS: Record<string, string> = { all: "All", incomplete: "Incomplete", sent: "Sent", won: "Won", lost: "Lost" };
 
 const forest = "#1a3a2e"; const lime = "#c8e63c"; const line = "#E5E7EB"; const ink = "#111827"; const muted = "#6B7280";
+const T = { green: "#2D6A4F", muted, ink, forest, line };
 
-interface Props { setView: (v: View) => void; }
+interface Props {
+  setView: (v: View) => void;
+  onViewQuote: (id: string) => void;
+}
 
-export default function QuotesView({ setView }: Props) {
+export default function QuotesView({ setView, onViewQuote }: Props) {
   const [quotes, setQuotes]     = useState<QuoteRecord[]>([]);
   const [tab, setTab]           = useState<QuoteStatus | "all">("all");
   const [search, setSearch]     = useState("");
@@ -237,6 +241,32 @@ export default function QuotesView({ setView }: Props) {
                   ))}
                 </div>
 
+                {/* Pricing summary */}
+                {selected.quoted_price !== null && selected.quoted_price !== undefined && (
+                  <div style={{ background: "#F0FDF4", border: "1px solid #86efac", borderRadius: 8, padding: "10px 12px", marginBottom: 14 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: T.green, textTransform: "uppercase" as const, letterSpacing: "0.05em", marginBottom: 8 }}>
+                      Quote Price
+                      <span style={{ marginLeft: 8, fontSize: 10, fontWeight: 500, color: T.muted, textTransform: "none" as const }}>
+                        {selected.price_source === "estimated" ? "· estimated (confirm in PrintLogic)" : selected.price_source === "manual" ? "· set manually" : "· from PrintLogic"}
+                      </span>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, fontSize: 12 }}>
+                      {[
+                        ["Ex VAT", formatEur(selected.price_breakdown?.subtotal_ex_vat ?? null)],
+                        ["Markup (25%)", formatEur(selected.price_breakdown ? (selected.price_breakdown.subtotal_ex_vat ?? 0) * 0.25 : null)],
+                        ["Quoted price", formatEur(selected.quoted_price)],
+                        ["VAT (23%)", formatEur(selected.price_breakdown?.vat_amount ?? null)],
+                        ["Total inc. VAT", formatEur(selected.price_breakdown?.total_inc_vat ?? null)],
+                      ].map(([l, v]) => (
+                        <div key={l as string} style={{ display: "flex", justifyContent: "space-between" }}>
+                          <span style={{ color: T.muted }}>{l}</span>
+                          <span style={{ fontWeight: 600, color: T.ink }}>{v}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Notes */}
                 <div style={{ marginBottom: 14 }}>
                   <label style={lbl}>Notes</label>
@@ -248,9 +278,9 @@ export default function QuotesView({ setView }: Props) {
 
                 {/* Actions */}
                 <div style={{ display: "flex", gap: 8 }}>
-                  <button onClick={() => { setView("upload-quote"); }}
+                <button onClick={() => onViewQuote(selected.id)}
                     style={{ flex: 1, padding: "9px 0", borderRadius: 8, border: `1px solid ${line}`, background: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", color: muted }}>
-                    View spec
+                    View spec →
                   </button>
                   <button onClick={() => updateStatus(selected, "sent")}
                     style={{ flex: 1, padding: "9px 0", borderRadius: 8, border: "none", background: forest, color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>

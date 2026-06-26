@@ -263,17 +263,21 @@ export interface ExtractedSpec {
 export type QuoteStatus = "incomplete" | "sent" | "won" | "lost";
 
 export interface QuoteRecord {
-  id: string;                    // uuid generated on save
+  id: string;
   status: QuoteStatus;
-  spec_ref: string | null;       // job_reference from spec
+  spec_ref: string | null;
   spec_name: string | null;
   customer_name: string | null;
   product_type: string | null;
   quantity: number | null;
   delivery_region: string | null;
-  date_submitted: string | null; // ISO — when customer submitted the RFQ
-  date_issued: string | null;    // ISO — when Azure sent the quote
-  date_updated: string;          // ISO — last modified
-  spec: Partial<ExtractedSpec>;  // full extracted spec
+  date_submitted: string | null;
+  date_issued: string | null;
+  date_updated: string;
+  spec: Partial<ExtractedSpec>;
   notes: string;
+  // Pricing
+  quoted_price: number | null;
+  price_source: "estimated" | "printlogic" | "manual" | null;
+  price_breakdown: import("./pricing").PriceBreakdown | null;
 }

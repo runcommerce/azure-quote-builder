@@ -1,5 +1,5 @@
 "use client";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { DEFAULT_ADMIN, DEFAULT_API_CONFIG } from "@/lib/defaults";
 import {
   buildPrompt, buildMtivityPrompt, callExtractAPI,
@@ -7,7 +7,8 @@ import {
   generateItemDetails, validateExtractedSpec,
   getMissingFields, draftClarificationEmail, deriveFieldStatus,
 } from "@/lib/extract";
-import { saveQuote, newQuoteId } from "@/lib/quotes";
+import { saveQuote, newQuoteId, loadQuotes } from "@/lib/quotes";
+import { estimatePrice, formatEur } from "@/lib/pricing";
 import type {
   ExtractedSpec, MtivitySubstrate, MtivitySide, MtivityCoating,
   MtivityFinishingItem, MtivityDeliveryLocation, FieldStatus,
@@ -78,7 +79,12 @@ const bSub  = (): MtivitySubstrate => ({ used_as: "", substrate_type: "Paper", s
 const bFin  = (): MtivityFinishingItem => ({ finishing_type: "", finishing_area: "Overall", comments: "" });
 const bLoc  = (): MtivityDeliveryLocation => ({ location_name: "", address: "", city: "", county: "", country: "Ireland", eircode: "", quantity: null, delivery_notes: "" });
 
-export default function UploadQuoteView() {
+interface UploadQuoteViewProps {
+  quoteId?: string | null;
+  onClearQuote?: () => void;
+}
+
+export default function UploadQuoteView({ quoteId, onClearQuote }: UploadQuoteViewProps = {}) {
   const [file, setFile]         = useState<File | null>(null);
   const [status, setStatus]     = useState<"idle"|"loading"|"done"|"approved"|"cannot_quote">("idle");
   const [spec, setSpec]         = useState<Partial<ExtractedSpec> | null>(null);
@@ -95,6 +101,28 @@ export default function UploadQuoteView() {
   const [draftSaved, setDraftSaved]       = useState(false);
   const [dateSubmitted, setDateSubmitted] = useState("");
   const [dateIssued, setDateIssued]       = useState("");
+  // Pricing
+  const [priceMode, setPriceMode]         = useState<"estimate"|"printlogic"|"manual">("estimate");
+  const [showPricing, setShowPricing]     = useState(true);
+  const [manualPrice, setManualPrice]     = useState<string>("");
+
+  // Load saved quote when quoteId prop is provided (View spec from Quotes)
+  useEffect(() => {
+    if (!quoteId) return;
+    const all = loadQuotes();
+    const found = all.find(q => q.id === quoteId);
+    if (!found) return;
+    setSpec(found.spec);
+    setStatus("done");
+    setSavedQuoteId(found.id);
+    setDateSubmitted(found.date_submitted ? found.date_submitted.slice(0, 10) : "");
+    setDateIssued(found.date_issued ? found.date_issued.slice(0, 10) : "");
+    if (found.quoted_price !== null && found.quoted_price !== undefined) {
+      setPriceMode(found.price_source ?? "estimate");
+      setManualPrice(String(found.quoted_price));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quoteId]);
 
   const admin = DEFAULT_ADMIN;
   const apiConfig = DEFAULT_API_CONFIG;
@@ -192,6 +220,13 @@ export default function UploadQuoteView() {
   const saveDraft = () => {
     if (!spec) return;
     const id = savedQuoteId ?? newQuoteId();
+    const delivRule = getDeliveryRule(spec, admin);
+    const breakdown = priceMode === "estimate"
+      ? estimatePrice(spec, delivRule?.courier ?? null, admin.defaultMarkup - 100)
+      : null;
+    const finalPrice = priceMode === "manual" && manualPrice
+      ? Number(manualPrice)
+      : breakdown?.quoted_price ?? null;
     saveQuote({
       id,
       status: status === "approved" ? "sent" : "incomplete",
@@ -206,6 +241,9 @@ export default function UploadQuoteView() {
       date_updated: new Date().toISOString(),
       spec,
       notes: "",
+      quoted_price: finalPrice,
+      price_source: priceMode,
+      price_breakdown: breakdown,
     });
     setSavedQuoteId(id);
     setDraftSaved(true);
@@ -226,9 +264,11 @@ export default function UploadQuoteView() {
   const isNonPrint = spec?.category_of_work && spec.category_of_work !== "Print";
 
   // ── Field component ──────────────────────────────────────────────────
-  const F = ({ k, label: l, ph, opts, wide, type: ftype }: {
+  // TEXT INPUTS: uncontrolled (defaultValue + onBlur) to prevent focus loss on re-render
+  // SELECTS: controlled (value + onChange) — selects don't lose focus on re-render
+  const F = ({ k, label: l, ph, opts, wide }: {
     k: keyof ExtractedSpec; label: string; ph?: string;
-    opts?: string[]; wide?: boolean; type?: string;
+    opts?: string[]; wide?: boolean;
   }) => {
     const s = st(k);
     const val = spec?.[k]; const str = val === null || val === undefined ? "" : String(val);
@@ -240,8 +280,12 @@ export default function UploadQuoteView() {
               {!str && <option value="">— Select —</option>}
               {opts.map(o => <option key={o}>{o}</option>)}
             </select>
-          : <input type={ftype ?? "text"} value={str} placeholder={ph ?? "—"} style={inpStyle(s)}
-              onChange={e => set(k, (ftype === "number" ? (Number(e.target.value) || null) : e.target.value) as never)} />
+          : <input
+              key={`${k}-${savedQuoteId ?? "new"}`}
+              defaultValue={str}
+              placeholder={ph ?? "—"}
+              style={inpStyle(s)}
+              onBlur={e => set(k, e.target.value as never)} />
         }
       </div>
     );
@@ -263,8 +307,13 @@ export default function UploadQuoteView() {
     return (
       <div>
         <Lbl status={s}>{l}</Lbl>
-        <input type="number" value={num} placeholder={ph ?? "—"} style={inpStyle(s)}
-          onChange={e => set(k, (Number(e.target.value) || null) as never)} />
+        <input
+          type="number"
+          key={`${k}-${savedQuoteId ?? "new"}`}
+          defaultValue={num}
+          placeholder={ph ?? "—"}
+          style={inpStyle(s)}
+          onBlur={e => set(k, (Number(e.target.value) || null) as never)} />
       </div>
     );
   };
@@ -692,6 +741,111 @@ export default function UploadQuoteView() {
               <div style={fWrap}><F k="special_notes" label="Special notes" ph="Any other quoting-relevant info" wide /></div>
             </div>
 
+            {/* ─── PRICING PANEL ─── */}
+            {(() => {
+              const delivRule = getDeliveryRule(spec, admin);
+              const breakdown = priceMode === "estimate"
+                ? estimatePrice(spec, delivRule?.courier ?? null, admin.defaultMarkup - 100)
+                : null;
+              return (
+                <div style={card()}>
+                  <div style={sHdr()}>
+                    <span style={sLbl}>💰 Pricing</span>
+                    <button onClick={() => setShowPricing(p => !p)}
+                      style={{ marginLeft: "auto", background: "rgba(255,255,255,0.15)", border: "none", color: "#fff", borderRadius: 5, padding: "3px 10px", cursor: "pointer", fontSize: 12 }}>
+                      {showPricing ? "Hide" : "Show"}
+                    </button>
+                  </div>
+                  {showPricing && (
+                    <div style={{ padding: "14px 18px" }}>
+                      {/* Mode toggles */}
+                      <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" as const }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: T.muted, alignSelf: "center", marginRight: 4 }}>Price via:</div>
+                        {(["estimate","printlogic","manual"] as const).map(mode => (
+                          <button key={mode} onClick={() => setPriceMode(mode)} style={{
+                            padding: "6px 14px", borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 600,
+                            border: `1.5px solid ${priceMode === mode ? T.forest : T.line}`,
+                            background: priceMode === mode ? T.forest : "#fff",
+                            color: priceMode === mode ? T.lime : T.muted,
+                          }}>
+                            {mode === "estimate" ? "📊 Estimate" : mode === "printlogic" ? "🖨 PrintLogic" : "✏️ Manual"}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Estimate mode */}
+                      {priceMode === "estimate" && breakdown && (
+                        <div>
+                          <div style={{ background: "#F9FAFB", borderRadius: 8, overflow: "hidden", marginBottom: 10 }}>
+                            {[
+                              ["Stock cost",   formatEur(breakdown.stock_cost),    breakdown.stock_cost === null],
+                              ["Print cost",   formatEur(breakdown.print_cost),    false],
+                              ["Finishing",    formatEur(breakdown.finishing_cost), false],
+                              ["Delivery",     formatEur(breakdown.delivery_cost),  false],
+                              ["Subtotal",     formatEur(breakdown.subtotal_ex_vat), false],
+                              [`Markup (${breakdown.markup_pct}%)`, formatEur(breakdown.subtotal_ex_vat !== null ? breakdown.subtotal_ex_vat * breakdown.markup_pct / 100 : null), false],
+                            ].map(([l, v, warn]) => (
+                              <div key={l as string} style={{ display: "flex", justifyContent: "space-between", padding: "7px 12px", borderBottom: `1px solid ${T.line}`, fontSize: 13 }}>
+                                <span style={{ color: T.muted }}>{l}</span>
+                                <span style={{ fontWeight: 600, color: warn ? T.amber : T.ink }}>{v}</span>
+                              </div>
+                            ))}
+                            <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 12px", background: T.forest, fontSize: 14, fontWeight: 700 }}>
+                              <span style={{ color: "#fff" }}>Quoted price (ex VAT)</span>
+                              <span style={{ color: T.lime }}>{formatEur(breakdown.quoted_price)}</span>
+                            </div>
+                            <div style={{ display: "flex", justifyContent: "space-between", padding: "7px 12px", fontSize: 12 }}>
+                              <span style={{ color: T.muted }}>VAT (23%)</span>
+                              <span style={{ color: T.ink }}>{formatEur(breakdown.vat_amount)}</span>
+                            </div>
+                            <div style={{ display: "flex", justifyContent: "space-between", padding: "7px 12px", fontSize: 13, fontWeight: 700 }}>
+                              <span style={{ color: T.ink }}>Total inc. VAT</span>
+                              <span style={{ color: T.ink }}>{formatEur(breakdown.total_inc_vat)}</span>
+                            </div>
+                          </div>
+                          {breakdown.notes.length > 0 && (
+                            <div style={{ padding: "8px 12px", background: T.amberBg, border: `1px solid #fcd34d`, borderRadius: 7, fontSize: 12, color: T.amberTx }}>
+                              {breakdown.notes.map((n, i) => <div key={i}>⚠ {n}</div>)}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* PrintLogic mode */}
+                      {priceMode === "printlogic" && (
+                        <div style={{ padding: "12px 14px", background: "#F9FAFB", borderRadius: 8, fontSize: 13, color: T.muted, lineHeight: 1.7 }}>
+                          <div style={{ fontWeight: 600, color: T.ink, marginBottom: 6 }}>Send to PrintLogic to calculate</div>
+                          Using the Item Details in the right panel, populate PrintLogic and click Calculate Quote. Once calculated, enter the PrintLogic price below to save it against this quote.
+                          <div style={{ marginTop: 10 }}>
+                            <label style={{ fontSize: 11, fontWeight: 600, color: T.muted, display: "block", marginBottom: 4, textTransform: "uppercase" as const, letterSpacing: "0.05em" }}>PrintLogic quoted price (ex VAT €)</label>
+                            <input type="number" value={manualPrice} placeholder="e.g. 485.00" style={inpStyle()}
+                              onChange={e => setManualPrice(e.target.value)} />
+                            <div style={{ fontSize: 10, color: T.muted, marginTop: 3 }}>Enter the price from PrintLogic — saves against the quote when you click Save draft</div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Manual mode */}
+                      {priceMode === "manual" && (
+                        <div>
+                          <label style={{ fontSize: 11, fontWeight: 600, color: T.muted, display: "block", marginBottom: 4, textTransform: "uppercase" as const, letterSpacing: "0.05em" }}>Manual price (ex VAT €)</label>
+                          <input type="number" value={manualPrice} placeholder="e.g. 485.00" style={inpStyle()}
+                            onChange={e => setManualPrice(e.target.value)} />
+                          <div style={{ fontSize: 10, color: T.muted, marginTop: 3 }}>Override the calculated price — use for outwork quotes or agreed rates</div>
+                          {manualPrice && (
+                            <div style={{ marginTop: 10, padding: "10px 12px", background: T.forest, borderRadius: 8, display: "flex", justifyContent: "space-between" }}>
+                              <span style={{ color: "#fff", fontWeight: 600, fontSize: 14 }}>Quoted price</span>
+                              <span style={{ color: T.lime, fontWeight: 700, fontSize: 16 }}>{formatEur(Number(manualPrice))}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
             {/* ─── QUOTE DATES ─── */}
             <div style={card()}>
               <div style={sHdr()}><span style={sLbl}>📅 Quote Dates</span></div>
@@ -711,7 +865,7 @@ export default function UploadQuoteView() {
 
             {/* ACTIONS */}
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 4 }}>
-              <button onClick={() => { setFile(null); setSpec(null); setStatus("idle"); setError(null); setIsMtivity(false); setClarifPanel(false); setClarifSent(false); }} style={{ padding: "11px 18px", borderRadius: 10, border: `1.5px solid ${T.line}`, background: "#fff", color: T.muted, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>← New spec</button>
+              <button onClick={() => { setFile(null); setSpec(null); setStatus("idle"); setError(null); setIsMtivity(false); setClarifPanel(false); setClarifSent(false); setSavedQuoteId(null); onClearQuote?.(); }} style={{ padding: "11px 18px", borderRadius: 10, border: `1.5px solid ${T.line}`, background: "#fff", color: T.muted, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>← New spec</button>
               <button onClick={saveDraft} style={{ padding: "11px 18px", borderRadius: 10, border: `1.5px solid ${T.forest}`, background: draftSaved ? T.forest : "#fff", color: draftSaved ? T.lime : T.forest, fontSize: 14, fontWeight: 600, cursor: "pointer", transition: "all 0.2s" }}>
                 {draftSaved ? "✓ Saved" : savedQuoteId ? "↑ Update draft" : "💾 Save draft"}
               </button>
