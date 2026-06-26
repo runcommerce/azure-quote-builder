@@ -50,8 +50,8 @@ const SAMPLE_USERS = [
   { id: "3", name: "Lisa Reid",      email: "lreid@azurecomm.ie",         role: "sales_rep",  active: true,  lastLogin: "Today 09:02",  provider: "Azure" },
   { id: "4", name: "Aaron Herbert",  email: "aaron@azurecomm.ie",         role: "estimator",  active: false, lastLogin: "3 weeks ago",  provider: "Azure" },
   { id: "5", name: "Ciaran D'Arcy",  email: "ciaran@azurecomm.ie",        role: "admin",      active: true,  lastLogin: "Yesterday",    provider: "Azure" },
-  { id: "6", name: "Brian Kitson",   email: "brian@azurecomm.ie",         role: "user",       active: true,  lastLogin: "Unknown",      provider: "Azure" },
-  { id: "7", name: "David O'Neill",  email: "david@azurecomm.ie",         role: "user",       active: true,  lastLogin: "Unknown",      provider: "Azure" },
+  { id: "6", name: "Brian Kitson",   email: "brian@azurecomm.ie",         role: "viewer",       active: true,  lastLogin: "Unknown",      provider: "Azure" },
+  { id: "7", name: "David O'Neill",  email: "david@azurecomm.ie",         role: "viewer",       active: true,  lastLogin: "Unknown",      provider: "Azure" },
 ];
 
 const ROLE_STYLES: Record<string, { bg: string; color: string; label: string }> = {
@@ -345,7 +345,7 @@ export default function SystemAdminView() {
               </thead>
               <tbody>
                 {users.map((u, i) => {
-                  const rs = ROLE_STYLES[u.role];
+                  const rs = ROLE_STYLES[u.role] ?? ROLE_STYLES.viewer;
                   return (
                     <tr key={u.id} style={{ borderBottom: i < users.length - 1 ? "1px solid rgba(26,58,46,0.06)" : "none" }}>
                       <td style={{ padding: "11px 14px" }}>
