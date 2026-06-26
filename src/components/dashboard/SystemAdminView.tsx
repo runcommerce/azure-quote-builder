@@ -45,11 +45,13 @@ const TABS = [
 
 // ── Sample data ────────────────────────────────────────────────────────────
 const SAMPLE_USERS = [
-  { id: "1", name: "Eamonn Grant",  email: "eamonn@standfast.partners", role: "superadmin", active: true,  lastLogin: "Today 09:14",   provider: "Standfast" },
-  { id: "2", name: "Jenny Johnston",email: "jenny@azurecomm.ie",         role: "admin",      active: true,  lastLogin: "Today 08:50",   provider: "Azure" },
-  { id: "3", name: "Lisa Reid",     email: "lreid@azurecomm.ie",         role: "sales_rep",  active: true,  lastLogin: "Today 09:02",   provider: "Azure" },
-  { id: "4", name: "Aaron Herbert", email: "aaron@azurecomm.ie",         role: "estimator",  active: false, lastLogin: "3 weeks ago",   provider: "Azure" },
-  { id: "5", name: "Ciaran D'Arcy", email: "ciaran@azurecomm.ie",        role: "admin",      active: true,  lastLogin: "Yesterday",     provider: "Azure" },
+  { id: "1", name: "Eamonn Grant",   email: "eamonn@standfast.partners", role: "superadmin", active: true,  lastLogin: "Today 09:14",  provider: "Standfast" },
+  { id: "2", name: "Jenny Johnston", email: "jenny@azurecomm.ie",         role: "admin",      active: true,  lastLogin: "Today 08:50",  provider: "Azure" },
+  { id: "3", name: "Lisa Reid",      email: "lreid@azurecomm.ie",         role: "sales_rep",  active: true,  lastLogin: "Today 09:02",  provider: "Azure" },
+  { id: "4", name: "Aaron Herbert",  email: "aaron@azurecomm.ie",         role: "estimator",  active: false, lastLogin: "3 weeks ago",  provider: "Azure" },
+  { id: "5", name: "Ciaran D'Arcy",  email: "ciaran@azurecomm.ie",        role: "admin",      active: true,  lastLogin: "Yesterday",    provider: "Azure" },
+  { id: "6", name: "Brian Kitson",   email: "brian@azurecomm.ie",         role: "user",       active: true,  lastLogin: "Unknown",      provider: "Azure" },
+  { id: "7", name: "David O'Neill",  email: "david@azurecomm.ie",         role: "user",       active: true,  lastLogin: "Unknown",      provider: "Azure" },
 ];
 
 const ROLE_STYLES: Record<string, { bg: string; color: string; label: string }> = {
@@ -87,6 +89,56 @@ const CAT_STYLE: Record<string, { bg: string; color: string }> = {
 export default function SystemAdminView() {
   const [tab, setTab] = useState("overview");
   const [users, setUsers] = useState(SAMPLE_USERS);
+  const [usersLoading, setUsersLoading] = useState(true);
+  // Reset password state
+  const [resetTarget, setResetTarget]   = useState<{ id: string; name: string; email: string } | null>(null);
+  const [resetResult, setResetResult]   = useState<{ link: string; sent: boolean; email: string } | null>(null);
+  const [resetLoading, setResetLoading] = useState(false);
+  const [copiedLink, setCopiedLink]     = useState(false);
+
+  // Load real users from DB
+  useEffect(() => {
+    fetch("/api/admin/users")
+      .then(r => r.json())
+      .then(data => {
+        if (data.users && data.users.length > 0) {
+          // Merge DB users with SAMPLE_USERS metadata (lastLogin, provider)
+          const merged = data.users.map((u: { id: string; name: string; email: string; role: string }) => {
+            const sample = SAMPLE_USERS.find(s => s.email === u.email);
+            return {
+              ...u,
+              active: true,
+              lastLogin: sample?.lastLogin ?? "—",
+              provider: sample?.provider ?? "Azure",
+            };
+          });
+          setUsers(merged);
+        }
+      })
+      .catch(() => { /* fall back to SAMPLE_USERS */ })
+      .finally(() => setUsersLoading(false));
+  }, []);
+
+  const handleReset = async (user: { id: string; name: string; email: string }) => {
+    setResetTarget(user);
+    setResetResult(null);
+    setResetLoading(true);
+    try {
+      const res = await fetch("/api/admin/users/reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id, email: user.email }),
+      });
+      const data = await res.json();
+      if (data.resetLink) {
+        setResetResult({ link: data.resetLink, sent: !!data.sent, email: data.email ?? user.email });
+      }
+    } catch {
+      setResetResult({ link: "", sent: false, email: user.email });
+    } finally {
+      setResetLoading(false);
+    }
+  };
   const [saved, setSaved] = useState<string | null>(null);
   const [showInvite, setShowInvite] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
@@ -263,7 +315,7 @@ export default function SystemAdminView() {
           {/* Users table */}
           <div style={card}>
             <div style={{ padding: "12px 16px", borderBottom: "1px solid rgba(26,58,46,0.08)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#0e1f18" }}>{users.length} users</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#0e1f18" }}>{usersLoading ? "Loading…" : `${users.length} users`}</div>
               <button onClick={() => setShowInvite(true)} style={priBtn}>+ Invite user</button>
             </div>
 
@@ -327,12 +379,18 @@ export default function SystemAdminView() {
                       </td>
                       <td style={{ padding: "11px 14px", fontSize: 12.5, color: "#9ca3af" }}>{u.lastLogin}</td>
                       <td style={{ padding: "11px 14px" }}>
-                        {u.role !== "superadmin" && (
-                          <button onClick={() => setUsers(prev => prev.filter(uu => uu.id !== u.id))}
-                            style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #fca5a5", background: "#fff", color: "#dc2626", fontSize: 11.5, cursor: "pointer" }}>
-                            Remove
+                        <div style={{ display: "flex", gap: 4 }}>
+                          <button onClick={() => handleReset({ id: u.id, name: u.name, email: u.email })}
+                            style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #d1d5db", background: "#fff", color: "#374151", fontSize: 11.5, cursor: "pointer" }}>
+                            🔑 Reset pwd
                           </button>
-                        )}
+                          {u.role !== "superadmin" && (
+                            <button onClick={() => setUsers(prev => prev.filter(uu => uu.id !== u.id))}
+                              style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #fca5a5", background: "#fff", color: "#dc2626", fontSize: 11.5, cursor: "pointer" }}>
+                              Remove
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -340,6 +398,56 @@ export default function SystemAdminView() {
               </tbody>
             </table>
           </div>
+
+          {/* ── Reset password result panel ── */}
+          {resetTarget && (
+            <div style={{ margin: "16px 0 0", padding: "16px 20px", background: "#fff", borderRadius: 10, border: "1px solid #e5e7eb" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#0e1f18" }}>
+                  🔑 Password reset — {resetTarget.name}
+                </div>
+                <button onClick={() => { setResetTarget(null); setResetResult(null); setCopiedLink(false); }}
+                  style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "#9ca3af" }}>×</button>
+              </div>
+
+              {resetLoading && (
+                <div style={{ fontSize: 13, color: "#6b7280" }}>Generating reset link…</div>
+              )}
+
+              {!resetLoading && resetResult && resetResult.link && (
+                <div>
+                  {resetResult.sent ? (
+                    <div style={{ padding: "10px 14px", background: "#f0fdf4", border: "1px solid #86efac", borderRadius: 8, fontSize: 13, color: "#166534", marginBottom: 12 }}>
+                      ✓ Reset email sent to <strong>{resetResult.email}</strong>
+                    </div>
+                  ) : (
+                    <div style={{ padding: "10px 14px", background: "#fffbeb", border: "1px solid #fcd34d", borderRadius: 8, fontSize: 13, color: "#92400e", marginBottom: 12 }}>
+                      ⚠ Email not sent (Resend not configured). Copy the link below and share it manually.
+                    </div>
+                  )}
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 6, textTransform: "uppercase" as const, letterSpacing: "0.05em" }}>Reset link (expires in 1 hour)</div>
+                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <input readOnly value={resetResult.link}
+                      style={{ flex: 1, padding: "8px 10px", borderRadius: 7, border: "1px solid #e5e7eb", fontSize: 12, color: "#374151", background: "#f9fafb", fontFamily: "monospace" }} />
+                    <button onClick={() => { navigator.clipboard.writeText(resetResult.link); setCopiedLink(true); setTimeout(() => setCopiedLink(false), 2500); }}
+                      style={{ padding: "8px 16px", borderRadius: 7, border: "none", background: "#1a3a2e", color: "#c8e63c", fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" as const }}>
+                      {copiedLink ? "✓ Copied" : "Copy link"}
+                    </button>
+                  </div>
+                  <div style={{ marginTop: 8 }}>
+                    <button onClick={() => handleReset(resetTarget)}
+                      style={{ fontSize: 12, color: "#6b7280", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>
+                      Generate new link
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {!resetLoading && resetResult && !resetResult.link && (
+                <div style={{ fontSize: 13, color: "#dc2626" }}>Failed to generate reset link. Check server logs.</div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
