@@ -28,8 +28,8 @@ export function detectNonPrint(text: string): { isNonPrint: boolean; reason: str
 // ── REQUIRED FIELDS ───────────────────────────────────────────────────────
 // "Always shown" fields that must be populated to calculate a quote
 export const REQUIRED_FIELDS: Record<string, string> = {
-  quantity:       "Total quantity",
-  delivery_region: "Delivery region",
+  quantity: "Total quantity",
+  // delivery_region always gets a default (ROI/overnight) so not listed as hard-required
 };
 
 export const CONDITIONAL_REQUIRED: Record<string, {
@@ -365,16 +365,26 @@ export function validateExtractedSpec(spec: Partial<ExtractedSpec>): Partial<Ext
     updated.number_of_versions = 1;
   }
 
-  // Delivery defaults (Spec 2 feedback):
-  // - delivery_location_count defaults to 1 if not stated
-  // - non-Dublin → overnight parcel auto-applied
-  // - Dublin → left open for human selection (delivery_region stays "Dublin")
+  // Delivery defaults:
+  // - delivery_location_count defaults to 1 if not stated (amber)
+  // - no delivery_region → default to ROI (outside Dublin), apply overnight, mark amber
+  // - non-Dublin region → overnight instruction auto-applied
+  // - Dublin → left open for human selection
   if (!updated.delivery_location_count) {
     updated.delivery_location_count = 1;
-    // Set status to amber (inferred, not stated)
     if (updated.field_status) updated.field_status["delivery_location_count"] = "amber";
   }
-  if (updated.delivery_region && updated.delivery_region !== "Dublin" && !updated.delivery_instructions) {
+  if (!updated.delivery_region) {
+    // No delivery region stated — default to outside Dublin (safer/more expensive default)
+    updated.delivery_region = "ROI";
+    updated.delivery_instructions = updated.delivery_instructions || "Overnight parcel delivery";
+    if (updated.field_status) {
+      updated.field_status["delivery_region"] = "amber";
+      updated.field_status["delivery_instructions"] = "amber";
+    }
+    // Add to confidence flags so reviewer sees it
+    flags.push("delivery_region — not stated, defaulted to ROI / overnight (€10). Confirm with customer.");
+  } else if (updated.delivery_region !== "Dublin" && !updated.delivery_instructions) {
     updated.delivery_instructions = "Overnight parcel delivery";
   }
 
@@ -444,7 +454,7 @@ export function validateExtractedSpec(spec: Partial<ExtractedSpec>): Partial<Ext
 const ALWAYS_REQUIRED_SET = new Set([
   "job_reference","category_of_work","product_type","quantity",
   "flat_size_length","flat_size_width","pages",
-  "substrate_weight_gsm","sides_printed","delivery_region",
+  "substrate_weight_gsm","sides_printed",
 ]);
 
 // ── MATERIAL LOOKUP ───────────────────────────────────────────────────────
