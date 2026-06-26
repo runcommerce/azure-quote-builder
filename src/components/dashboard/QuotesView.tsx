@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import type { View } from "./tokens";
 import type { QuoteRecord, QuoteStatus } from "@/lib/types";
 import { formatEur } from "@/lib/pricing";
+import { loadQuotes, saveQuote, deleteQuote } from "@/lib/quotes";
 
 // ── STATUS CONFIG ─────────────────────────────────────────────────────────
 const STATUS: Record<QuoteStatus, { label: string; dot: string; bg: string; tx: string }> = {
