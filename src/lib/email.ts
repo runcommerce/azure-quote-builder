@@ -1,5 +1,5 @@
 // Email sending via Resend (or nodemailer SMTP fallback)
-const FROM = "Azure Quote Builder <noreply@azurecomm.ie>";
+const FROM = "Azure Quote Builder <onboarding@resend.dev>";
 
 export async function sendPasswordResetEmail(email: string, name: string, token: string) {
   const resetUrl = `${process.env.NEXTAUTH_URL}/reset-password?token=${token}`;
