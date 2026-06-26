@@ -248,7 +248,7 @@ export default function QuotesView({ setView, onViewQuote }: Props) {
                     <div style={{ fontSize: 11, fontWeight: 700, color: T.green, textTransform: "uppercase" as const, letterSpacing: "0.05em", marginBottom: 8 }}>
                       Quote Price
                       <span style={{ marginLeft: 8, fontSize: 10, fontWeight: 500, color: T.muted, textTransform: "none" as const }}>
-                        {selected.price_source === "estimated" ? "· estimated (confirm in PrintLogic)" : selected.price_source === "manual" ? "· set manually" : "· from PrintLogic"}
+                        {selected.price_source === "estimate" ? "· estimated (confirm in PrintLogic)" : selected.price_source === "manual" ? "· set manually" : "· from PrintLogic"}
                       </span>
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, fontSize: 12 }}>
