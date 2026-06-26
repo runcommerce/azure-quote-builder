@@ -16,7 +16,7 @@ export interface PriceBreakdown {
   vat_rate:         number;         // 23% standard Irish VAT
   vat_amount:       number | null;
   total_inc_vat:    number | null;
-  price_source:     "estimated" | "printlogic" | "manual";
+  price_source: "estimate" | "printlogic" | "manual";
   notes:            string[];
 }
 
@@ -120,7 +120,7 @@ export function estimatePrice(
       delivery_cost: null, subtotal_ex_vat: null,
       markup_pct: markupPct, quoted_price: null,
       vat_rate: 23, vat_amount: null, total_inc_vat: null,
-      price_source: "estimated",
+      price_source: "estimate",
       notes: ["Quantity required to calculate price"],
     };
   }
@@ -178,7 +178,7 @@ export function estimatePrice(
     vat_rate: 23,
     vat_amount,
     total_inc_vat,
-    price_source: "estimated",
+    price_source: "estimate",
     notes,
   };
 }

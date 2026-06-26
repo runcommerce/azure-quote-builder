@@ -278,6 +278,6 @@ export interface QuoteRecord {
   notes: string;
   // Pricing
   quoted_price: number | null;
-  price_source: "estimated" | "printlogic" | "manual" | null;
+  price_source: "estimate" | "printlogic" | "manual" | null;
   price_breakdown: import("./pricing").PriceBreakdown | null;
 }
