@@ -5,7 +5,7 @@ import { getAllUsers, deleteUser, updateUserRole } from "@/lib/db";
 async function requireAdmin() {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
-  if (session.user.role !== "admin") return NextResponse.json({ error: "Forbidden — admin only" }, { status: 403 });
+  if (!["admin","superadmin"].includes(session.user.role ?? "")) return NextResponse.json({ error: "Forbidden — admin only" }, { status: 403 });
   return null;
 }
 
