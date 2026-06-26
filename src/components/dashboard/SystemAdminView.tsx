@@ -87,14 +87,25 @@ const CAT_STYLE: Record<string, { bg: string; color: string }> = {
 
 // ── Main component ─────────────────────────────────────────────────────────
 export default function SystemAdminView() {
+  // ── All state declarations first ────────────────────────────────────────
   const [tab, setTab] = useState("overview");
   const [users, setUsers] = useState(SAMPLE_USERS);
   const [usersLoading, setUsersLoading] = useState(true);
-  // Reset password state
   const [resetTarget, setResetTarget]   = useState<{ id: string; name: string; email: string } | null>(null);
   const [resetResult, setResetResult]   = useState<{ link: string; sent: boolean; email: string } | null>(null);
   const [resetLoading, setResetLoading] = useState(false);
   const [copiedLink, setCopiedLink]     = useState(false);
+  const [saved, setSaved]               = useState<string | null>(null);
+  const [showInvite, setShowInvite]     = useState(false);
+  const [inviteEmail, setInviteEmail]   = useState("");
+  const [inviteRole, setInviteRole]     = useState("sales_rep");
+  const [confirmDanger, setConfirmDanger] = useState("");
+  const [branding, setBranding] = useState({
+    appName: "Azure IQ", tagline: "Quote faster. Stay consistent.",
+    primaryColor: "#1a3a2e", accentColor: "#c8e63c",
+    logoUrl: "/azure-logo.png", faviconUrl: "",
+    supportEmail: "lreid@azurecomm.ie", supportPhone: "01 531 2695",
+  });
 
   // Load real users from DB
   useEffect(() => {
@@ -102,20 +113,14 @@ export default function SystemAdminView() {
       .then(r => r.json())
       .then(data => {
         if (data.users && data.users.length > 0) {
-          // Merge DB users with SAMPLE_USERS metadata (lastLogin, provider)
           const merged = data.users.map((u: { id: string; name: string; email: string; role: string }) => {
             const sample = SAMPLE_USERS.find(s => s.email === u.email);
-            return {
-              ...u,
-              active: true,
-              lastLogin: sample?.lastLogin ?? "—",
-              provider: sample?.provider ?? "Azure",
-            };
+            return { ...u, active: true, lastLogin: sample?.lastLogin ?? "—", provider: sample?.provider ?? "Azure" };
           });
           setUsers(merged);
         }
       })
-      .catch(() => { /* fall back to SAMPLE_USERS */ })
+      .catch(() => {})
       .finally(() => setUsersLoading(false));
   }, []);
 
@@ -139,19 +144,6 @@ export default function SystemAdminView() {
       setResetLoading(false);
     }
   };
-  const [saved, setSaved] = useState<string | null>(null);
-  const [showInvite, setShowInvite] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState("sales_rep");
-  const [confirmDanger, setConfirmDanger] = useState("");
-
-  // Branding state
-  const [branding, setBranding] = useState({
-    appName: "Azure IQ", tagline: "Quote faster. Stay consistent.",
-    primaryColor: "#1a3a2e", accentColor: "#c8e63c",
-    logoUrl: "/azure-logo.png", faviconUrl: "",
-    supportEmail: "lreid@azurecomm.ie", supportPhone: "01 531 2695",
-  });
 
   // Integration status
   const INTEGRATIONS = [
