@@ -13,13 +13,21 @@
   --az-line:        rgba(26,58,46,0.12);
   --az-line-light:  rgba(255,255,255,0.12); /* lines on dark bg */
 
+  /* Aliases used by auth pages — mapped to brand palette */
+  --az-navy:        #1a3a2e;   /* = forest green — used for primary buttons */
+  --az-blue:        #1a3a2e;   /* primary CTA colour on auth pages */
+  --az-blue-dark:   #122a21;   /* hover state for blue/navy */
+  --az-bg:          #f7f9f7;   /* page background — same as off-white */
+  --az-green:       #2D6A4F;   /* success text colour */
+  --az-green-light: #E9F5F0;   /* success background */
+
   /* Status colours */
   --az-amber:       #d97706;
   --az-amber-light: #fef3c7;
   --az-red:         #dc2626;
   --az-red-light:   #fee2e2;
   --az-green-ok:    #16a34a;
-  --az-green-light: #dcfce7;
+
 
   /* Layout */
   --az-radius-sm:   6px;
