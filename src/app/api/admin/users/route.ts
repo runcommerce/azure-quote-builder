@@ -14,8 +14,20 @@ async function getSession() {
 async function requireAdmin(req?: NextRequest) {
   void req;
   const session = await getSession();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
-  if (!["admin","superadmin"].includes(session.user.role ?? ""))
+  if (!session?.user?.email) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
+
+  // JWT role may be stale (issued before role was added to token).
+  // Always verify against DB so superadmins are never blocked.
+  let role = session.user.role ?? "";
+  if (!role || role === "user") {
+    try {
+      const { getUserByEmail } = await import("@/lib/db");
+      const dbUser = await getUserByEmail(session.user.email);
+      role = dbUser?.role ?? role;
+    } catch { /* ignore — fall through to JWT role */ }
+  }
+
+  if (!["admin","superadmin"].includes(role))
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   return null;
 }

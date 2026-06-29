@@ -3,7 +3,22 @@ import { auth } from "@/lib/auth";
 
 async function requireAdmin() {
   const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
+  if (!session?.user?.email) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
+
+  // Always verify role from DB — JWT token may be stale
+  let role = session.user.role ?? "";
+  if (!role || role === "user") {
+    try {
+      const { getUserByEmail } = await import("@/lib/db");
+      const dbUser = await getUserByEmail(session.user.email);
+      role = dbUser?.role ?? role;
+    } catch {}
+  }
+
+  if (!["admin","superadmin"].includes(role))
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  return null;
+});
   if (!["admin","superadmin"].includes(session.user.role ?? ""))
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   return null;
