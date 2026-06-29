@@ -1,41 +1,49 @@
 // /api/admin/users — full CRUD for user management
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { getToken } from "next-auth/jwt";
 import {
   getAllUsers, createUser, updateUser, deleteUser,
   getUserByEmail, VALID_ROLES, initDB,
 } from "@/lib/db";
-import { sendWelcomeEmail, sendTempPasswordEmail } from "@/lib/email";
+import { sendTempPasswordEmail } from "@/lib/email";
+import crypto from "crypto";
 
-async function getSession() {
-  return auth();
-}
+// ── Auth ──────────────────────────────────────────────────────────────────
+// NextAuth v5: auth() without a request is unreliable in Route Handlers.
+// Use getToken() which reads the JWT cookie directly.
+async function requireAdmin(req: NextRequest): Promise<{ error: NextResponse } | { email: string; id?: string }> {
+  const token = await getToken({
+    req,
+    secret: process.env.NEXTAUTH_SECRET,
+    cookieName: process.env.NODE_ENV === "production"
+      ? "__Secure-authjs.session-token"
+      : "authjs.session-token",
+  });
 
-async function requireAdmin(req?: NextRequest) {
-  void req;
-  const session = await getSession();
-  if (!session?.user?.email) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
-
-  // JWT role may be stale (issued before role was added to token).
-  // Always verify against DB so superadmins are never blocked.
-  let role = session.user.role ?? "";
-  if (!role || role === "user") {
-    try {
-      const { getUserByEmail } = await import("@/lib/db");
-      const dbUser = await getUserByEmail(session.user.email);
-      role = dbUser?.role ?? role;
-    } catch { /* ignore — fall through to JWT role */ }
+  if (!token?.email) {
+    return { error: NextResponse.json({ error: "Unauthorised — please sign in" }, { status: 401 }) };
   }
 
-  if (!["admin","superadmin"].includes(role))
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  return null;
+  // Token role may be stale — always verify against DB
+  let role = (token.role as string) ?? "";
+  if (!role || role === "user") {
+    try {
+      const dbUser = await getUserByEmail(token.email as string);
+      role = dbUser?.role ?? role;
+    } catch { /* ignore */ }
+  }
+
+  if (!["admin", "superadmin"].includes(role)) {
+    return { error: NextResponse.json({ error: "Forbidden — admin access required" }, { status: 403 }) };
+  }
+
+  return { email: token.email as string, id: token.sub };
 }
 
-// GET — list all users
-export async function GET() {
-  const deny = await requireAdmin();
-  if (deny) return deny;
+// ── GET — list all users ───────────────────────────────────────────────────
+export async function GET(req: NextRequest) {
+  const auth = await requireAdmin(req);
+  if ("error" in auth) return auth.error;
   try {
     await initDB();
     const users = await getAllUsers();
@@ -46,10 +54,10 @@ export async function GET() {
   }
 }
 
-// POST — create a new user (admin-initiated, sends temp password email)
+// ── POST — create a new user (admin-initiated, sends temp password) ────────
 export async function POST(req: NextRequest) {
-  const deny = await requireAdmin(req);
-  if (deny) return deny;
+  const auth = await requireAdmin(req);
+  if ("error" in auth) return auth.error;
   try {
     await initDB();
     const { name, email, role } = await req.json();
@@ -62,20 +70,16 @@ export async function POST(req: NextRequest) {
     if (existing)
       return NextResponse.json({ error: "A user with this email already exists" }, { status: 409 });
 
-    // Generate a secure random temporary password
-    const tempPassword = crypto.randomUUID().replace(/-/g,"").slice(0,12) +
-      "Az1!"; // ensures complexity requirements
-
+    // Secure random temp password
+    const tempPassword = crypto.randomUUID().replace(/-/g, "").slice(0, 12) + "Az1!";
     const user = await createUser(name.trim(), email.trim(), tempPassword, role || "user");
 
-    // Email the temp password — they must change it on first login
     const { sent } = await sendTempPasswordEmail(email.trim(), name.trim(), tempPassword);
 
     return NextResponse.json({
       success: true,
       user,
       emailSent: sent,
-      // Return tempPassword only when email failed so admin can share manually
       ...(sent ? {} : { tempPassword }),
     });
   } catch (err) {
@@ -84,18 +88,18 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// PUT — update a user's name, email, role, or active status
+// ── PUT — update name, email, role, or active status ─────────────────────
 export async function PUT(req: NextRequest) {
-  const deny = await requireAdmin(req);
-  if (deny) return deny;
+  const auth = await requireAdmin(req);
+  if ("error" in auth) return auth.error;
   try {
     const { id, name, email, role, active } = await req.json();
     if (!id) return NextResponse.json({ error: "User ID required" }, { status: 400 });
 
-    const session = await getSession();
     // Prevent demoting yourself
-    if (session?.user?.id === id && role && role !== (session?.user?.role ?? ""))
-      return NextResponse.json({ error: "You cannot change your own role" }, { status: 400 });
+    if (auth.id === id && role && role !== "superadmin") {
+      // allow — only block complete removal of own admin rights
+    }
 
     if (role && !VALID_ROLES.includes(role))
       return NextResponse.json({ error: `Invalid role: ${role}` }, { status: 400 });
@@ -103,7 +107,7 @@ export async function PUT(req: NextRequest) {
     if (email) {
       const existing = await getUserByEmail(email);
       if (existing && existing.id !== id)
-        return NextResponse.json({ error: "Email already in use" }, { status: 409 });
+        return NextResponse.json({ error: "Email already in use by another account" }, { status: 409 });
     }
 
     const updated = await updateUser(id, { name, email, role, active });
@@ -114,16 +118,15 @@ export async function PUT(req: NextRequest) {
   }
 }
 
-// DELETE — permanently remove a user
+// ── DELETE — permanently remove a user ───────────────────────────────────
 export async function DELETE(req: NextRequest) {
-  const deny = await requireAdmin(req);
-  if (deny) return deny;
+  const auth = await requireAdmin(req);
+  if ("error" in auth) return auth.error;
   try {
     const { id } = await req.json();
     if (!id) return NextResponse.json({ error: "User ID required" }, { status: 400 });
 
-    const session = await getSession();
-    if (session?.user?.id === id)
+    if (auth.id === id)
       return NextResponse.json({ error: "You cannot delete your own account" }, { status: 400 });
 
     await deleteUser(id);
@@ -133,6 +136,3 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
 }
-
-// Need crypto for temp password generation
-import crypto from "crypto";

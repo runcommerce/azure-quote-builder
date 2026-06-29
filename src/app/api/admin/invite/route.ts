@@ -1,29 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { getToken } from "next-auth/jwt";
+import { getUserByEmail } from "@/lib/db";
 
-async function requireAdmin() {
-  const session = await auth();
-  if (!session?.user?.email) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
-
-  // Always verify role from DB — JWT token may be stale
-  let role = session.user.role ?? "";
+async function requireAdmin(req: NextRequest) {
+  const token = await getToken({
+    req, secret: process.env.NEXTAUTH_SECRET,
+    cookieName: process.env.NODE_ENV === "production"
+      ? "__Secure-authjs.session-token" : "authjs.session-token",
+  });
+  if (!token?.email) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
+  let role = (token.role as string) ?? "";
   if (!role || role === "user") {
-    try {
-      const { getUserByEmail } = await import("@/lib/db");
-      const dbUser = await getUserByEmail(session.user.email);
-      role = dbUser?.role ?? role;
-    } catch {}
+    try { const u = await getUserByEmail(token.email as string); role = u?.role ?? role; } catch {}
   }
-
   if (!["admin","superadmin"].includes(role))
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   return null;
 }
 
 export async function POST(req: NextRequest) {
-  const deny = await requireAdmin();
+  const deny = await requireAdmin(req);
   if (deny) return deny;
-
   try {
     const { email, role, name } = await req.json();
     if (!email) return NextResponse.json({ error: "Email required" }, { status: 400 });
@@ -32,50 +29,21 @@ export async function POST(req: NextRequest) {
     const inviteCode = process.env.INVITE_CODE || "AZURE2026";
     const signupLink = `${baseUrl}/signup?email=${encodeURIComponent(email)}&inviteCode=${inviteCode}&role=${role ?? "user"}`;
 
-    // Send via Resend if configured
     if (process.env.RESEND_API_KEY) {
       const greeting = name ? `Hi ${name.split(" ")[0]},` : "Hi,";
-      const html = `
-<div style="font-family:sans-serif;max-width:520px;margin:0 auto">
-  <div style="background:#1a3a2e;padding:24px 32px;border-radius:12px 12px 0 0">
-    <div style="color:#fff;font-size:18px;font-weight:700">azure
-      <span style="color:#c8e63c;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;font-weight:400;margin-left:4px">communications · IQ</span>
-    </div>
-  </div>
-  <div style="background:#fff;padding:32px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px">
-    <p style="color:#111827;font-size:15px;font-weight:600;margin:0 0 8px">${greeting}</p>
-    <p style="color:#6b7280;font-size:14px;line-height:1.7;margin:0 0 24px">
-      You've been invited to join <strong>Azure IQ</strong> — the AI-powered quoting platform for Azure Communications.
-      Click the button below to create your account.
-    </p>
-    <a href="${signupLink}" style="display:inline-block;background:#1a3a2e;color:#c8e63c;padding:13px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px">
-      Create my account →
-    </a>
-    <p style="color:#9ca3af;font-size:12px;margin:24px 0 0;line-height:1.6">
-      Your invite code is already included in the link. If the button doesn't work, copy this URL:<br>
-      <span style="font-family:monospace;font-size:11px;color:#6b7280;word-break:break-all">${signupLink}</span>
-    </p>
-  </div>
-</div>`;
-
+      const html = `<div style="font-family:sans-serif;max-width:520px;margin:0 auto"><div style="background:#1a3a2e;padding:24px 32px;border-radius:12px 12px 0 0"><div style="color:#fff;font-size:18px;font-weight:700">azure <span style="color:#c8e63c;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;font-weight:400;margin-left:4px">communications · IQ</span></div></div><div style="background:#fff;padding:32px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px"><p style="color:#111827;font-size:15px;font-weight:600;margin:0 0 8px">${greeting}</p><p style="color:#6b7280;font-size:14px;line-height:1.7;margin:0 0 24px">You've been invited to join <strong>Azure IQ</strong>. Click the button below to create your account.</p><a href="${signupLink}" style="display:inline-block;background:#1a3a2e;color:#c8e63c;padding:13px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px">Create my account →</a><p style="color:#9ca3af;font-size:12px;margin:24px 0 0">Link: <span style="font-family:monospace;font-size:11px;word-break:break-all">${signupLink}</span></p></div></div>`;
       const sender = process.env.RESEND_FROM || "onboarding@resend.dev";
       const res = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${process.env.RESEND_API_KEY}` },
-        body: JSON.stringify({
-          from: `Azure IQ <${sender}>`,
-          to: email,
-          subject: "You've been invited to Azure IQ",
-          html,
-        }),
+        body: JSON.stringify({ from: `Azure IQ <${sender}>`, to: email, subject: "You've been invited to Azure IQ", html }),
       });
       if (res.ok) return NextResponse.json({ sent: true, email, signupLink });
       const err = await res.json();
-      console.error("Resend error:", err);
-      // Fall through to return link even if email fails
+      console.error("Resend invite error:", err);
+      // Fall through — return link for manual sharing even if email failed
     }
 
-    // No Resend or email failed — return link for manual sharing
     return NextResponse.json({ sent: false, email, signupLink });
   } catch (err) {
     console.error("Invite error:", err);
