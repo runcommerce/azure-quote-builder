@@ -111,3 +111,37 @@ export async function sendWelcomeEmail(email: string, name: string): Promise<voi
   const sent = await sendViaResend(email, "Welcome to Azure IQ", html) || await sendViaSMTP(email, "Welcome to Azure IQ", html);
   if (!sent) console.log(`[DEV] Welcome email for ${email}: ${loginLink}`);
 }
+
+// ── TEMP PASSWORD (admin-created users) ────────────────────────────────────
+export async function sendTempPasswordEmail(
+  email: string,
+  name: string,
+  tempPassword: string
+): Promise<{ sent: boolean }> {
+  const loginLink = `${process.env.NEXTAUTH_URL || "https://azure-quote-builder.vercel.app"}/login`;
+  const firstName = name?.split(" ")[0] ?? "";
+  const html = emailWrap(`
+    <h2 style="margin:0 0 12px;font-size:20px;color:#111827;font-weight:700">Welcome to Azure IQ${firstName ? ", " + firstName : ""}</h2>
+    <p style="margin:0 0 16px;font-size:15px;color:#6b7280;line-height:1.7">
+      An account has been created for you. Use the details below to sign in for the first time.
+    </p>
+    <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:16px 20px;margin-bottom:24px">
+      <div style="font-size:12px;color:#9ca3af;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Email</div>
+      <div style="font-size:15px;color:#111827;font-weight:600;margin-bottom:12px">${email}</div>
+      <div style="font-size:12px;color:#9ca3af;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Temporary password</div>
+      <div style="font-size:18px;color:#1a3a2e;font-weight:700;font-family:monospace;letter-spacing:0.08em">${tempPassword}</div>
+    </div>
+    <p style="margin:0 0 24px;font-size:14px;color:#ef4444;font-weight:600">
+      ⚠ Please change your password immediately after signing in.
+    </p>
+    ${ctaButton(loginLink, "Sign in to Azure IQ →")}
+    <p style="margin:20px 0 0;font-size:12px;color:#9ca3af;line-height:1.6">
+      If you did not expect this email, please contact your administrator.
+    </p>
+  `);
+
+  const subject = "Your Azure IQ account is ready";
+  const sent = await sendViaResend(email, subject, html) || await sendViaSMTP(email, subject, html);
+  if (!sent) console.log(`[DEV] Temp password for ${email}: ${tempPassword} — login: ${loginLink}`);
+  return { sent };
+}

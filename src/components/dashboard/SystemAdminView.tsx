@@ -101,6 +101,16 @@ export default function SystemAdminView() {
   const [inviteRole, setInviteRole]     = useState("sales_rep");
   const [inviteLoading, setInviteLoading] = useState(false);
   const [inviteResult, setInviteResult] = useState<{ sent: boolean; link: string; email: string } | null>(null);
+  // Create user
+  const [showCreate, setShowCreate]     = useState(false);
+  const [createForm, setCreateForm]     = useState({ name: "", email: "", role: "viewer" });
+  const [createLoading, setCreateLoading] = useState(false);
+  const [createResult, setCreateResult] = useState<{ success: boolean; error?: string; email?: string; emailSent?: boolean; tempPassword?: string } | null>(null);
+  // Edit user
+  const [editingUser, setEditingUser]   = useState<{ id: string; name: string; email: string; role: string; active: boolean } | null>(null);
+  const [editSaving, setEditSaving]     = useState(false);
+  // User action feedback
+  const [userActionMsg, setUserActionMsg] = useState("");
   const [confirmDanger, setConfirmDanger] = useState("");
   const [branding, setBranding] = useState({
     appName: "Azure IQ", tagline: "Quote faster. Stay consistent.",
@@ -109,22 +119,88 @@ export default function SystemAdminView() {
     supportEmail: "lreid@azurecomm.ie", supportPhone: "01 531 2695",
   });
 
-  // Load real users from DB
-  useEffect(() => {
+  // Load real users from DB — no SAMPLE_USERS merge, pure DB
+  const loadUsers = () => {
+    setUsersLoading(true);
     fetch("/api/admin/users")
       .then(r => r.json())
       .then(data => {
-        if (data.users && data.users.length > 0) {
-          const merged = data.users.map((u: { id: string; name: string; email: string; role: string }) => {
-            const sample = SAMPLE_USERS.find(s => s.email === u.email);
-            return { ...u, active: true, lastLogin: sample?.lastLogin ?? "—", provider: sample?.provider ?? "Azure" };
-          });
-          setUsers(merged);
+        if (data.users) {
+          setUsers(data.users.map((u: { id: string; name: string; email: string; role: string; active: boolean }) => ({
+            ...u, active: u.active !== false,
+          })));
         }
       })
       .catch(() => {})
       .finally(() => setUsersLoading(false));
-  }, []);
+  };
+
+  useEffect(() => { loadUsers(); }, []);
+
+  const showMsg = (msg: string) => {
+    setUserActionMsg(msg);
+    setTimeout(() => setUserActionMsg(""), 4000);
+  };
+
+  const handleCreateUser = async () => {
+    if (!createForm.name || !createForm.email) return;
+    setCreateLoading(true);
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(createForm),
+      });
+      const data = await res.json();
+      if (!res.ok) { setCreateResult({ success: false, error: data.error }); return; }
+      setCreateResult({ success: true, email: data.user.email, emailSent: data.emailSent, tempPassword: data.tempPassword });
+      loadUsers();
+    } catch { setCreateResult({ success: false, error: "Network error. Please try again." }); }
+    finally { setCreateLoading(false); }
+  };
+
+  const handleUpdateUser = async (id: string, fields: { name?: string; email?: string; role?: string; active?: boolean }) => {
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, ...fields }),
+      });
+      const data = await res.json();
+      if (!res.ok) { showMsg(`✗ ${data.error}`); return; }
+      setUsers(prev => prev.map(u => u.id === id ? { ...u, ...fields } : u));
+      showMsg("✓ User updated");
+    } catch { showMsg("✗ Network error"); }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingUser) return;
+    setEditSaving(true);
+    await handleUpdateUser(editingUser.id, {
+      name: editingUser.name,
+      email: editingUser.email,
+      role: editingUser.role,
+      active: editingUser.active,
+    });
+    setEditSaving(false);
+    setEditingUser(null);
+    loadUsers();
+  };
+
+  const handleDeleteUser = async (id: string, name: string) => {
+    if (!confirm(`Permanently delete ${name}? This cannot be undone.`)) return;
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      const data = await res.json();
+      if (!res.ok) { showMsg(`✗ ${data.error}`); return; }
+      setUsers(prev => prev.filter(u => u.id !== id));
+      showMsg(`✓ ${name} permanently deleted`);
+    } catch { showMsg("✗ Network error"); }
+  };
 
   const handleReset = async (user: { id: string; name: string; email: string }) => {
     setResetTarget(user);
@@ -296,7 +372,7 @@ export default function SystemAdminView() {
       ════════════════════════════════════════════════════════════ */}
       {tab === "users" && (
         <div style={{ display: "grid", gap: 14 }}>
-          <SectionHeader icon="👥" title="Users & Roles" desc="Manage who has access to Azure IQ and what they can do." />
+          <SectionHeader icon="👥" title="Users & Roles" desc="All changes are saved to the database immediately." />
 
           {/* Role reference */}
           <div style={{ ...card, padding: "14px 16px" }}>
@@ -309,7 +385,7 @@ export default function SystemAdminView() {
                 { role: "estimator",  perms: ["Own quotes", "Pricing data", "Knowledge base", "PrintLogic", "—"] },
                 { role: "viewer",     perms: ["View quotes", "View portals", "Read only", "—", "—"] },
               ].map(r => {
-                const rs = ROLE_STYLES[r.role];
+                const rs = ROLE_STYLES[r.role] ?? ROLE_STYLES.viewer;
                 return (
                   <div key={r.role} style={{ borderRadius: 8, border: "1px solid rgba(26,58,46,0.09)", overflow: "hidden" }}>
                     <div style={{ padding: "8px 10px", background: rs.bg }}>
@@ -324,60 +400,105 @@ export default function SystemAdminView() {
             </div>
           </div>
 
-          {/* Users table */}
+          {/* ── CREATE USER PANEL ── */}
           <div style={card}>
             <div style={{ padding: "12px 16px", borderBottom: "1px solid rgba(26,58,46,0.08)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#0e1f18" }}>{usersLoading ? "Loading…" : `${users.length} users`}</div>
-              <button onClick={() => setShowInvite(true)} style={priBtn}>+ Invite user</button>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#0e1f18" }}>
+                  {usersLoading ? "Loading users…" : `${users.length} user${users.length !== 1 ? "s" : ""}`}
+                </div>
+                <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>All data stored in Vercel Postgres. Changes are immediate.</div>
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={() => { setShowCreate(c => !c); setShowInvite(false); }} style={priBtn}>+ Create user</button>
+                <button onClick={() => { setShowInvite(i => !i); setShowCreate(false); setInviteResult(null); }} style={secBtn}>✉ Send invite link</button>
+              </div>
             </div>
 
-            {showInvite && (
-              <div style={{ padding: "14px 16px", background: "rgba(26,58,46,0.03)", borderBottom: "1px solid rgba(26,58,46,0.08)" }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "#0e1f18", marginBottom: 10 }}>Invite a new user</div>
-                {!inviteResult ? (
-                  <>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 180px auto auto", gap: 10, alignItems: "flex-end" }}>
-                      <div>
-                        <label style={lbl}>Email address</label>
-                        <input style={inp()} value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} placeholder="colleague@azurecomm.ie" onKeyDown={e => e.key === "Enter" && handleInvite()} />
-                      </div>
-                      <div>
-                        <label style={lbl}>Role</label>
-                        <select style={inp()} value={inviteRole} onChange={e => setInviteRole(e.target.value)}>
-                          <option value="sales_rep">Sales Rep</option>
-                          <option value="estimator">Estimator</option>
-                          <option value="admin">Admin</option>
-                          <option value="viewer">Viewer</option>
-                        </select>
-                      </div>
-                      <button onClick={handleInvite} disabled={!inviteEmail || inviteLoading}
-                        style={{ ...priBtn, opacity: !inviteEmail || inviteLoading ? 0.6 : 1 }}>
-                        {inviteLoading ? "Sending…" : "Send invite"}
-                      </button>
-                      <button onClick={() => { setShowInvite(false); setInviteResult(null); }} style={secBtn}>Cancel</button>
-                    </div>
-                    <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 8 }}>
-                      An email will be sent with a signup link and invite code <code style={{ background: "rgba(26,58,46,0.08)", padding: "1px 6px", borderRadius: 4, fontSize: 12 }}>AZURE2026</code>
-                    </div>
-                  </>
-                ) : (
-                  <div>
-                    {inviteResult.sent ? (
-                      <div style={{ padding: "10px 14px", background: "#f0fdf4", border: "1px solid #86efac", borderRadius: 8, fontSize: 13, color: "#166534", marginBottom: 10 }}>
-                        ✓ Invite email sent to <strong>{inviteResult.email}</strong>
-                      </div>
-                    ) : (
-                      <div style={{ padding: "10px 14px", background: "#fffbeb", border: "1px solid #fcd34d", borderRadius: 8, fontSize: 13, color: "#92400e", marginBottom: 10 }}>
-                        ⚠ Email not sent (Resend not configured). Share this link manually:
+            {/* Create user form */}
+            {showCreate && (
+              <div style={{ padding: "16px", background: "#f0fdf4", borderBottom: "1px solid #bbf7d0" }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#166534", marginBottom: 12 }}>Create new user — sends temp password by email</div>
+                {createResult && (
+                  <div style={{ padding: "10px 14px", background: createResult.success ? "#f0fdf4" : "#fef2f2", border: `1px solid ${createResult.success ? "#86efac" : "#fca5a5"}`, borderRadius: 8, fontSize: 13, color: createResult.success ? "#166534" : "#dc2626", marginBottom: 12 }}>
+                    {createResult.success ? (
+                      <>✓ User created. {createResult.emailSent ? `Temp password emailed to ${createResult.email}.` : "Email not sent — copy temp password below and share manually."}</>
+                    ) : createResult.error}
+                    {createResult.tempPassword && (
+                      <div style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "center" }}>
+                        <code style={{ flex: 1, padding: "6px 10px", background: "#fff", borderRadius: 6, border: "1px solid #d1d5db", fontSize: 13, fontFamily: "monospace", letterSpacing: "0.05em" }}>{createResult.tempPassword}</code>
+                        <button onClick={() => navigator.clipboard.writeText(createResult.tempPassword!)} style={{ padding: "6px 12px", borderRadius: 6, border: "none", background: "#1a3a2e", color: "#c8e63c", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Copy</button>
                       </div>
                     )}
-                    {inviteResult.link && (
-                      <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
-                        <input readOnly value={inviteResult.link} style={{ flex: 1, padding: "8px 10px", borderRadius: 7, border: "1px solid #e5e7eb", fontSize: 11, color: "#374151", background: "#f9fafb", fontFamily: "monospace" }} />
-                        <button onClick={() => { navigator.clipboard.writeText(inviteResult.link); }}
-                          style={{ padding: "8px 14px", borderRadius: 7, border: "none", background: "#1a3a2e", color: "#c8e63c", fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" as const }}>
-                          Copy link
-                        </button>
+                  </div>
+                )}
+                {!createResult?.success && (
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 160px auto auto", gap: 10, alignItems: "flex-end" }}>
+                    <div>
+                      <label style={lbl}>Full name</label>
+                      <input style={inp()} value={createForm.name} onChange={e => setCreateForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Lisa Reid" />
+                    </div>
+                    <div>
+                      <label style={lbl}>Email address</label>
+                      <input type="email" style={inp()} value={createForm.email} onChange={e => setCreateForm(f => ({ ...f, email: e.target.value }))} placeholder="lisa@azurecomm.ie" />
+                    </div>
+                    <div>
+                      <label style={lbl}>Role</label>
+                      <select style={inp()} value={createForm.role} onChange={e => setCreateForm(f => ({ ...f, role: e.target.value }))}>
+                        <option value="viewer">Viewer</option>
+                        <option value="sales_rep">Sales Rep</option>
+                        <option value="estimator">Estimator</option>
+                        <option value="admin">Admin</option>
+                        <option value="superadmin">Super Admin</option>
+                      </select>
+                    </div>
+                    <button onClick={handleCreateUser} disabled={!createForm.name || !createForm.email || createLoading}
+                      style={{ ...priBtn, opacity: (!createForm.name || !createForm.email || createLoading) ? 0.6 : 1 }}>
+                      {createLoading ? "Creating…" : "Create"}
+                    </button>
+                    <button onClick={() => { setShowCreate(false); setCreateResult(null); setCreateForm({ name: "", email: "", role: "viewer" }); }} style={secBtn}>Cancel</button>
+                  </div>
+                )}
+                {createResult?.success && (
+                  <button onClick={() => { setCreateResult(null); setCreateForm({ name: "", email: "", role: "viewer" }); loadUsers(); }} style={secBtn}>Create another</button>
+                )}
+              </div>
+            )}
+
+            {/* Invite link form */}
+            {showInvite && (
+              <div style={{ padding: "16px", background: "rgba(26,58,46,0.03)", borderBottom: "1px solid rgba(26,58,46,0.08)" }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#0e1f18", marginBottom: 10 }}>Send signup invite — user sets their own password</div>
+                {!inviteResult ? (
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 160px auto auto", gap: 10, alignItems: "flex-end" }}>
+                    <div>
+                      <label style={lbl}>Email address</label>
+                      <input style={inp()} value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} placeholder="colleague@azurecomm.ie" onKeyDown={e => e.key === "Enter" && handleInvite()} />
+                    </div>
+                    <div>
+                      <label style={lbl}>Role</label>
+                      <select style={inp()} value={inviteRole} onChange={e => setInviteRole(e.target.value)}>
+                        <option value="viewer">Viewer</option>
+                        <option value="sales_rep">Sales Rep</option>
+                        <option value="estimator">Estimator</option>
+                        <option value="admin">Admin</option>
+                      </select>
+                    </div>
+                    <button onClick={handleInvite} disabled={!inviteEmail || inviteLoading}
+                      style={{ ...priBtn, opacity: !inviteEmail || inviteLoading ? 0.6 : 1 }}>
+                      {inviteLoading ? "Sending…" : "Send invite"}
+                    </button>
+                    <button onClick={() => { setShowInvite(false); setInviteResult(null); }} style={secBtn}>Cancel</button>
+                  </div>
+                ) : (
+                  <div>
+                    <div style={{ padding: "10px 14px", background: inviteResult.sent ? "#f0fdf4" : "#fffbeb", border: `1px solid ${inviteResult.sent ? "#86efac" : "#fcd34d"}`, borderRadius: 8, fontSize: 13, color: inviteResult.sent ? "#166534" : "#92400e", marginBottom: 10 }}>
+                      {inviteResult.sent ? `✓ Invite email sent to ${inviteResult.email}` : "⚠ Email not sent — copy and share this link manually:"}
+                    </div>
+                    {inviteResult.link && !inviteResult.sent && (
+                      <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                        <input readOnly value={inviteResult.link} style={{ flex: 1, padding: "8px 10px", borderRadius: 7, border: "1px solid #e5e7eb", fontSize: 11, fontFamily: "monospace", background: "#f9fafb" }} />
+                        <button onClick={() => navigator.clipboard.writeText(inviteResult.link)} style={{ padding: "8px 14px", borderRadius: 7, border: "none", background: "#1a3a2e", color: "#c8e63c", fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" as const }}>Copy link</button>
                       </div>
                     )}
                     <div style={{ display: "flex", gap: 8 }}>
@@ -389,108 +510,146 @@ export default function SystemAdminView() {
               </div>
             )}
 
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr style={{ background: "rgba(26,58,46,0.03)", borderBottom: "1px solid rgba(26,58,46,0.08)" }}>
-                  {["User","Email","Role","Status","Last login",""].map(h => (
-                    <th key={h} style={{ padding: "9px 14px", textAlign: "left" as const, fontSize: 10.5, fontWeight: 700, color: "#5a7066", textTransform: "uppercase" as const, letterSpacing: "0.08em" }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {users.map((u, i) => {
-                  const rs = ROLE_STYLES[u.role] ?? ROLE_STYLES.viewer;
-                  return (
-                    <tr key={u.id} style={{ borderBottom: i < users.length - 1 ? "1px solid rgba(26,58,46,0.06)" : "none" }}>
-                      <td style={{ padding: "11px 14px" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-                          <div style={{ width: 30, height: 30, borderRadius: "50%", background: u.active ? "linear-gradient(135deg, #1a3a2e, #2a5a46)" : "#e5e7eb", display: "flex", alignItems: "center", justifyContent: "center", color: u.active ? "#c8e63c" : "#9ca3af", fontWeight: 800, fontSize: 12, flexShrink: 0 }}>
-                            {u.name.charAt(0)}
+            {/* ── USER TABLE ── */}
+            {usersLoading ? (
+              <div style={{ padding: "32px", textAlign: "center", color: "#9ca3af", fontSize: 13 }}>Loading users from database…</div>
+            ) : users.length === 0 ? (
+              <div style={{ padding: "32px", textAlign: "center", color: "#9ca3af", fontSize: 13 }}>No users found. Create one above.</div>
+            ) : (
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ background: "rgba(26,58,46,0.03)", borderBottom: "1px solid rgba(26,58,46,0.08)" }}>
+                    {["User","Email","Role","Status","Actions"].map(h => (
+                      <th key={h} style={{ padding: "9px 14px", textAlign: "left" as const, fontSize: 10.5, fontWeight: 700, color: "#5a7066", textTransform: "uppercase" as const, letterSpacing: "0.08em" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map((u, i) => {
+                    const rs = ROLE_STYLES[u.role] ?? ROLE_STYLES.viewer;
+                    const isEditing = editingUser?.id === u.id;
+                    return (
+                      <tr key={u.id} style={{ borderBottom: i < users.length - 1 ? "1px solid rgba(26,58,46,0.06)" : "none", background: isEditing ? "#f9fafb" : "transparent" }}>
+                        <td style={{ padding: "11px 14px" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                            <div style={{ width: 32, height: 32, borderRadius: "50%", background: u.active ? "linear-gradient(135deg,#1a3a2e,#2a5a46)" : "#e5e7eb", display: "flex", alignItems: "center", justifyContent: "center", color: u.active ? "#c8e63c" : "#9ca3af", fontWeight: 800, fontSize: 12, flexShrink: 0 }}>
+                              {(u.name || "?").charAt(0).toUpperCase()}
+                            </div>
+                            {isEditing ? (
+                              <input defaultValue={u.name} style={{ ...inp("140px"), fontSize: 13 }}
+                                onChange={e => setEditingUser(eu => eu ? { ...eu, name: e.target.value } : eu)} />
+                            ) : (
+                              <span style={{ fontSize: 13.5, fontWeight: 600, color: "#0e1f18" }}>{u.name}</span>
+                            )}
                           </div>
-                          <span style={{ fontSize: 13.5, fontWeight: 600, color: "#0e1f18" }}>{u.name}</span>
-                        </div>
-                      </td>
-                      <td style={{ padding: "11px 14px", fontSize: 13, color: "#5a7066" }}>{u.email}</td>
-                      <td style={{ padding: "11px 14px" }}>
-                        <select value={u.role} onChange={e => setUsers(prev => prev.map(uu => uu.id === u.id ? { ...uu, role: e.target.value } : uu))}
-                          style={{ ...inp("140px"), background: rs.bg, color: rs.color, fontWeight: 700, border: "none" }}>
-                          {Object.entries(ROLE_STYLES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-                        </select>
-                      </td>
-                      <td style={{ padding: "11px 14px" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                          <Toggle value={u.active} onChange={v => setUsers(prev => prev.map(uu => uu.id === u.id ? { ...uu, active: v } : uu))} />
-                          <span style={{ fontSize: 12, color: u.active ? "#166534" : "#9ca3af" }}>{u.active ? "Active" : "Disabled"}</span>
-                        </div>
-                      </td>
-                      <td style={{ padding: "11px 14px", fontSize: 12.5, color: "#9ca3af" }}>{u.lastLogin}</td>
-                      <td style={{ padding: "11px 14px" }}>
-                        <div style={{ display: "flex", gap: 4 }}>
-                          <button onClick={() => handleReset({ id: u.id, name: u.name, email: u.email })}
-                            style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #d1d5db", background: "#fff", color: "#374151", fontSize: 11.5, cursor: "pointer" }}>
-                            🔑 Reset pwd
-                          </button>
-                          {u.role !== "superadmin" && (
-                            <button onClick={() => setUsers(prev => prev.filter(uu => uu.id !== u.id))}
-                              style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #fca5a5", background: "#fff", color: "#dc2626", fontSize: 11.5, cursor: "pointer" }}>
-                              Remove
-                            </button>
+                        </td>
+                        <td style={{ padding: "11px 14px" }}>
+                          {isEditing ? (
+                            <input type="email" defaultValue={u.email} style={{ ...inp("180px"), fontSize: 13 }}
+                              onChange={e => setEditingUser(eu => eu ? { ...eu, email: e.target.value } : eu)} />
+                          ) : (
+                            <span style={{ fontSize: 13, color: "#5a7066" }}>{u.email}</span>
                           )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        </td>
+                        <td style={{ padding: "11px 14px" }}>
+                          {isEditing ? (
+                            <select value={editingUser?.role ?? u.role} onChange={e => setEditingUser(eu => eu ? { ...eu, role: e.target.value } : eu)}
+                              style={{ ...inp("140px"), background: rs.bg, color: rs.color, fontWeight: 700, border: "none" }}>
+                              {Object.entries(ROLE_STYLES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+                            </select>
+                          ) : (
+                            <span style={{ fontSize: 12, fontWeight: 700, padding: "3px 10px", borderRadius: 20, background: rs.bg, color: rs.color }}>{rs.label}</span>
+                          )}
+                        </td>
+                        <td style={{ padding: "11px 14px" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                            <Toggle value={isEditing ? (editingUser?.active ?? u.active) : u.active}
+                              onChange={v => {
+                                if (isEditing) { setEditingUser(eu => eu ? { ...eu, active: v } : eu); }
+                                else { handleUpdateUser(u.id, { active: v }); }
+                              }} />
+                            <span style={{ fontSize: 12, color: u.active ? "#166534" : "#9ca3af" }}>{u.active ? "Active" : "Disabled"}</span>
+                          </div>
+                        </td>
+                        <td style={{ padding: "11px 14px" }}>
+                          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" as const }}>
+                            {isEditing ? (
+                              <>
+                                <button onClick={() => handleSaveEdit()}
+                                  style={{ padding: "4px 12px", borderRadius: 6, border: "none", background: "#1a3a2e", color: "#c8e63c", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                                  {editSaving ? "Saving…" : "Save"}
+                                </button>
+                                <button onClick={() => setEditingUser(null)}
+                                  style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #e5e7eb", background: "#fff", color: "#374151", fontSize: 12, cursor: "pointer" }}>
+                                  Cancel
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <button onClick={() => setEditingUser({ ...u })}
+                                  style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #d1d5db", background: "#fff", color: "#374151", fontSize: 11.5, cursor: "pointer" }}>
+                                  ✏️ Edit
+                                </button>
+                                <button onClick={() => handleReset({ id: u.id, name: u.name, email: u.email })}
+                                  style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #d1d5db", background: "#fff", color: "#374151", fontSize: 11.5, cursor: "pointer" }}>
+                                  🔑 Reset pwd
+                                </button>
+                                {u.role !== "superadmin" && (
+                                  <button onClick={() => handleDeleteUser(u.id, u.name)}
+                                    style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #fca5a5", background: "#fff", color: "#dc2626", fontSize: 11.5, cursor: "pointer" }}>
+                                    🗑 Delete
+                                  </button>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+
+            {/* Action feedback bar */}
+            {userActionMsg && (
+              <div style={{ padding: "10px 16px", background: userActionMsg.includes("✓") ? "#f0fdf4" : "#fef2f2", borderTop: "1px solid rgba(26,58,46,0.08)", fontSize: 13, color: userActionMsg.includes("✓") ? "#166534" : "#dc2626" }}>
+                {userActionMsg}
+              </div>
+            )}
           </div>
 
-          {/* ── Reset password result panel ── */}
+          {/* ── RESET PASSWORD RESULT PANEL ── */}
           {resetTarget && (
-            <div style={{ margin: "16px 0 0", padding: "16px 20px", background: "#fff", borderRadius: 10, border: "1px solid #e5e7eb" }}>
+            <div style={{ padding: "16px 20px", background: "#fff", borderRadius: 10, border: "1px solid #e5e7eb" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "#0e1f18" }}>
-                  🔑 Password reset — {resetTarget.name}
-                </div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#0e1f18" }}>🔑 Password reset — {resetTarget.name} ({resetTarget.email})</div>
                 <button onClick={() => { setResetTarget(null); setResetResult(null); setCopiedLink(false); }}
                   style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "#9ca3af" }}>×</button>
               </div>
-
-              {resetLoading && (
-                <div style={{ fontSize: 13, color: "#6b7280" }}>Generating reset link…</div>
-              )}
-
-              {!resetLoading && resetResult && resetResult.link && (
+              {resetLoading && <div style={{ fontSize: 13, color: "#6b7280" }}>Generating reset link…</div>}
+              {!resetLoading && resetResult && (
                 <div>
-                  {resetResult.sent ? (
-                    <div style={{ padding: "10px 14px", background: "#f0fdf4", border: "1px solid #86efac", borderRadius: 8, fontSize: 13, color: "#166534", marginBottom: 12 }}>
-                      ✓ Reset email sent to <strong>{resetResult.email}</strong>
-                    </div>
-                  ) : (
-                    <div style={{ padding: "10px 14px", background: "#fffbeb", border: "1px solid #fcd34d", borderRadius: 8, fontSize: 13, color: "#92400e", marginBottom: 12 }}>
-                      ⚠ Email not sent (Resend not configured). Copy the link below and share it manually.
-                    </div>
+                  <div style={{ padding: "10px 14px", background: resetResult.sent ? "#f0fdf4" : "#fffbeb", border: `1px solid ${resetResult.sent ? "#86efac" : "#fcd34d"}`, borderRadius: 8, fontSize: 13, color: resetResult.sent ? "#166534" : "#92400e", marginBottom: 12 }}>
+                    {resetResult.sent ? `✓ Reset email sent to ${resetResult.email}` : "⚠ Email not sent — copy link below and share via WhatsApp or email."}
+                  </div>
+                  {resetResult.link && (
+                    <>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 6, textTransform: "uppercase" as const, letterSpacing: "0.05em" }}>Reset link (expires in 1 hour)</div>
+                      <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                        <input readOnly value={resetResult.link} style={{ flex: 1, padding: "8px 10px", borderRadius: 7, border: "1px solid #e5e7eb", fontSize: 12, color: "#374151", background: "#f9fafb", fontFamily: "monospace" }} />
+                        <button onClick={() => { navigator.clipboard.writeText(resetResult.link); setCopiedLink(true); setTimeout(() => setCopiedLink(false), 2500); }}
+                          style={{ padding: "8px 16px", borderRadius: 7, border: "none", background: "#1a3a2e", color: "#c8e63c", fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" as const }}>
+                          {copiedLink ? "✓ Copied" : "Copy link"}
+                        </button>
+                      </div>
+                    </>
                   )}
-                  <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 6, textTransform: "uppercase" as const, letterSpacing: "0.05em" }}>Reset link (expires in 1 hour)</div>
-                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                    <input readOnly value={resetResult.link}
-                      style={{ flex: 1, padding: "8px 10px", borderRadius: 7, border: "1px solid #e5e7eb", fontSize: 12, color: "#374151", background: "#f9fafb", fontFamily: "monospace" }} />
-                    <button onClick={() => { navigator.clipboard.writeText(resetResult.link); setCopiedLink(true); setTimeout(() => setCopiedLink(false), 2500); }}
-                      style={{ padding: "8px 16px", borderRadius: 7, border: "none", background: "#1a3a2e", color: "#c8e63c", fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" as const }}>
-                      {copiedLink ? "✓ Copied" : "Copy link"}
-                    </button>
-                  </div>
-                  <div style={{ marginTop: 8 }}>
-                    <button onClick={() => handleReset(resetTarget)}
-                      style={{ fontSize: 12, color: "#6b7280", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>
-                      Generate new link
-                    </button>
-                  </div>
+                  <button onClick={() => resetTarget && handleReset(resetTarget)}
+                    style={{ fontSize: 12, color: "#6b7280", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>
+                    Generate new link
+                  </button>
                 </div>
-              )}
-
-              {!resetLoading && resetResult && !resetResult.link && (
-                <div style={{ fontSize: 13, color: "#dc2626" }}>Failed to generate reset link. Check server logs.</div>
               )}
             </div>
           )}
