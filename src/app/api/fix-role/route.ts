@@ -17,13 +17,13 @@ export async function GET(req: NextRequest) {
     // Fix the role
     await sql`
       UPDATE users 
-      SET role = 'superadmin', updated_at = NOW() 
+      SET role = 'superadmin' 
       WHERE email = 'eamonn@standfast.partners'
     `;
     
     // Also ensure all known admins have correct roles
-    await sql`UPDATE users SET role = 'admin' WHERE email = 'jenny@azurecomm.ie' AND role = 'user'`;
-    await sql`UPDATE users SET role = 'admin' WHERE email = 'ciaran@azurecomm.ie' AND role = 'user'`;
+    await sql`UPDATE users SET role = 'admin' WHERE email = 'jenny@azurecomm.ie'`;
+    await sql`UPDATE users SET role = 'admin' WHERE email = 'ciaran@azurecomm.ie'`;
 
     const after = await sql`SELECT id, email, role FROM users ORDER BY created_at`;
     
