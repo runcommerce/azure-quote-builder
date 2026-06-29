@@ -21,10 +21,6 @@ async function requireAdmin() {
   if (!["admin","superadmin"].includes(role))
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   return null;
-});
-  if (!["admin", "superadmin"].includes(session.user.role ?? ""))
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  return null;
 }
 
 export async function POST(req: NextRequest) {
