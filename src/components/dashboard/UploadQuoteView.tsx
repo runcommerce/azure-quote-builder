@@ -497,9 +497,13 @@ export default function UploadQuoteView({ quoteId, onClearQuote }: UploadQuoteVi
 
             {/* Substrate conflict */}
             {hasConflict && (
-              <div style={{ background: T.redBg, border: `1.5px solid #fca5a5`, borderRadius: 8, padding: "12px 16px", marginBottom: 14 }}>
-                <div style={{ fontWeight: 700, fontSize: 13, color: T.red, marginBottom: 4 }}>⛔ Substrate conflict — manual selection required</div>
-                <div style={{ fontSize: 13, color: T.red, lineHeight: 1.6 }}>{spec.substrate_conflict_detail}</div>
+              <div style={{ background: T.redBg, border: `1.5px solid #fca5a5`, borderRadius: 8, padding: "14px 16px", marginBottom: 14 }}>
+                <div style={{ fontWeight: 700, fontSize: 14, color: T.red, marginBottom: 6 }}>⛔ Substrate conflict — manual selection required</div>
+                <div style={{ fontSize: 13, color: T.red, lineHeight: 1.7, marginBottom: 10 }}>{spec.substrate_conflict_detail}</div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: T.red, background: "rgba(220,38,38,0.08)", borderRadius: 6, padding: "8px 12px" }}>
+                  ↓ Fields marked in <span style={{ color: T.red, fontWeight: 800 }}>red</span> below require manual review and correction before this quote can be approved.
+                  Check: <strong>Substrate type</strong> · <strong>Substrate weight</strong> · <strong>Special requirements</strong> · <strong>Coatings</strong>
+                </div>
               </div>
             )}
 

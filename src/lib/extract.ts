@@ -447,6 +447,23 @@ export function validateExtractedSpec(spec: Partial<ExtractedSpec>): Partial<Ext
     }
   }
 
+  // When substrate conflict is flagged, mark the conflicting fields red
+  // so the reviewer knows exactly what to manually select/override
+  if (updated.substrate_conflict) {
+    if (!updated.field_status) updated.field_status = {};
+    // Mark the top-level substrate fields that need manual resolution
+    updated.field_status["substrate_type"] = "red";
+    updated.field_status["substrate_weight_gsm"] = "red";
+    updated.field_status["substrate_special_requirements"] = "red";
+    // Mark the PrintLogic auto-match as blocked
+    updated.field_status["sustainability"] = "amber";
+    // Ensure the conflict detail is clear and actionable
+    if (!updated.substrate_conflict_detail) {
+      updated.substrate_conflict_detail =
+        "Substrate conflict detected. Review the substrate type and coating selections below and select the correct combination manually.";
+    }
+  }
+
   updated.confidence_flags = flags;
   return updated;
 }
