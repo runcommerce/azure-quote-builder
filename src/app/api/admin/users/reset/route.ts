@@ -5,11 +5,11 @@ import { sendPasswordResetEmail } from "@/lib/email";
 import { sql } from "@vercel/postgres";
 
 async function requireAdmin(req: NextRequest) {
-  const token = await getToken({
-    req, secret: process.env.NEXTAUTH_SECRET,
-    cookieName: process.env.NODE_ENV === "production"
-      ? "__Secure-authjs.session-token" : "authjs.session-token",
-  });
+  const secret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET ?? "";
+  let token = await getToken({ req, secret, secureCookie: true }).catch(() => null);
+  if (!token) {
+    token = await getToken({ req, secret, secureCookie: false }).catch(() => null);
+  }
   if (!token?.email) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
   let role = (token.role as string) ?? "";
   if (!role || role === "user") {

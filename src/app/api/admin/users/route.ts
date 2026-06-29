@@ -1,4 +1,3 @@
-// /api/admin/users — full CRUD for user management
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import {
@@ -8,23 +7,26 @@ import {
 import { sendTempPasswordEmail } from "@/lib/email";
 import crypto from "crypto";
 
-// ── Auth ──────────────────────────────────────────────────────────────────
-// NextAuth v5: auth() without a request is unreliable in Route Handlers.
-// Use getToken() which reads the JWT cookie directly.
-async function requireAdmin(req: NextRequest): Promise<{ error: NextResponse } | { email: string; id?: string }> {
-  const token = await getToken({
-    req,
-    secret: process.env.NEXTAUTH_SECRET,
-    cookieName: process.env.NODE_ENV === "production"
-      ? "__Secure-authjs.session-token"
-      : "authjs.session-token",
-  });
+// ── Auth helper ───────────────────────────────────────────────────────────
+// NextAuth v5 beta: AUTH_SECRET is the new env var name (NEXTAUTH_SECRET fallback).
+// Don't hardcode cookie name — secureCookie flag handles prod vs dev automatically.
+async function requireAdmin(req: NextRequest): Promise<
+  { error: NextResponse } | { email: string; id?: string }
+> {
+  const secret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET ?? "";
+
+  // Try secure cookie (production) first, then non-secure (dev)
+  let token = await getToken({ req, secret, secureCookie: true }).catch(() => null);
+  if (!token) {
+    token = await getToken({ req, secret, secureCookie: false }).catch(() => null);
+  }
 
   if (!token?.email) {
+    console.error("[admin/users] No token — cookie missing or secret mismatch");
     return { error: NextResponse.json({ error: "Unauthorised — please sign in" }, { status: 401 }) };
   }
 
-  // Token role may be stale — always verify against DB
+  // Role from token may be stale — verify against DB
   let role = (token.role as string) ?? "";
   if (!role || role === "user") {
     try {
@@ -34,6 +36,7 @@ async function requireAdmin(req: NextRequest): Promise<{ error: NextResponse } |
   }
 
   if (!["admin", "superadmin"].includes(role)) {
+    console.error(`[admin/users] Forbidden — email=${token.email} role=${role}`);
     return { error: NextResponse.json({ error: "Forbidden — admin access required" }, { status: 403 }) };
   }
 
@@ -54,7 +57,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// ── POST — create a new user (admin-initiated, sends temp password) ────────
+// ── POST — create user with temp password ─────────────────────────────────
 export async function POST(req: NextRequest) {
   const auth = await requireAdmin(req);
   if ("error" in auth) return auth.error;
@@ -70,16 +73,12 @@ export async function POST(req: NextRequest) {
     if (existing)
       return NextResponse.json({ error: "A user with this email already exists" }, { status: 409 });
 
-    // Secure random temp password
     const tempPassword = crypto.randomUUID().replace(/-/g, "").slice(0, 12) + "Az1!";
     const user = await createUser(name.trim(), email.trim(), tempPassword, role || "user");
-
     const { sent } = await sendTempPasswordEmail(email.trim(), name.trim(), tempPassword);
 
     return NextResponse.json({
-      success: true,
-      user,
-      emailSent: sent,
+      success: true, user, emailSent: sent,
       ...(sent ? {} : { tempPassword }),
     });
   } catch (err) {
@@ -88,18 +87,13 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// ── PUT — update name, email, role, or active status ─────────────────────
+// ── PUT — update name/email/role/active ───────────────────────────────────
 export async function PUT(req: NextRequest) {
   const auth = await requireAdmin(req);
   if ("error" in auth) return auth.error;
   try {
     const { id, name, email, role, active } = await req.json();
     if (!id) return NextResponse.json({ error: "User ID required" }, { status: 400 });
-
-    // Prevent demoting yourself
-    if (auth.id === id && role && role !== "superadmin") {
-      // allow — only block complete removal of own admin rights
-    }
 
     if (role && !VALID_ROLES.includes(role))
       return NextResponse.json({ error: `Invalid role: ${role}` }, { status: 400 });
@@ -125,7 +119,6 @@ export async function DELETE(req: NextRequest) {
   try {
     const { id } = await req.json();
     if (!id) return NextResponse.json({ error: "User ID required" }, { status: 400 });
-
     if (auth.id === id)
       return NextResponse.json({ error: "You cannot delete your own account" }, { status: 400 });
 
