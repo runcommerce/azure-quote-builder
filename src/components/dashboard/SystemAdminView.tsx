@@ -99,6 +99,8 @@ export default function SystemAdminView() {
   const [showInvite, setShowInvite]     = useState(false);
   const [inviteEmail, setInviteEmail]   = useState("");
   const [inviteRole, setInviteRole]     = useState("sales_rep");
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [inviteResult, setInviteResult] = useState<{ sent: boolean; link: string; email: string } | null>(null);
   const [confirmDanger, setConfirmDanger] = useState("");
   const [branding, setBranding] = useState({
     appName: "Azure IQ", tagline: "Quote faster. Stay consistent.",
@@ -142,6 +144,24 @@ export default function SystemAdminView() {
       setResetResult({ link: "", sent: false, email: user.email });
     } finally {
       setResetLoading(false);
+    }
+  };
+
+  const handleInvite = async () => {
+    if (!inviteEmail) return;
+    setInviteLoading(true);
+    try {
+      const res = await fetch("/api/admin/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: inviteEmail, role: inviteRole }),
+      });
+      const data = await res.json();
+      setInviteResult({ sent: !!data.sent, link: data.signupLink ?? "", email: inviteEmail });
+    } catch {
+      setInviteResult({ sent: false, link: "", email: inviteEmail });
+    } finally {
+      setInviteLoading(false);
     }
   };
 
@@ -314,24 +334,58 @@ export default function SystemAdminView() {
             {showInvite && (
               <div style={{ padding: "14px 16px", background: "rgba(26,58,46,0.03)", borderBottom: "1px solid rgba(26,58,46,0.08)" }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: "#0e1f18", marginBottom: 10 }}>Invite a new user</div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 180px auto auto", gap: 10, alignItems: "flex-end" }}>
+                {!inviteResult ? (
+                  <>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 180px auto auto", gap: 10, alignItems: "flex-end" }}>
+                      <div>
+                        <label style={lbl}>Email address</label>
+                        <input style={inp()} value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} placeholder="colleague@azurecomm.ie" onKeyDown={e => e.key === "Enter" && handleInvite()} />
+                      </div>
+                      <div>
+                        <label style={lbl}>Role</label>
+                        <select style={inp()} value={inviteRole} onChange={e => setInviteRole(e.target.value)}>
+                          <option value="sales_rep">Sales Rep</option>
+                          <option value="estimator">Estimator</option>
+                          <option value="admin">Admin</option>
+                          <option value="viewer">Viewer</option>
+                        </select>
+                      </div>
+                      <button onClick={handleInvite} disabled={!inviteEmail || inviteLoading}
+                        style={{ ...priBtn, opacity: !inviteEmail || inviteLoading ? 0.6 : 1 }}>
+                        {inviteLoading ? "Sending…" : "Send invite"}
+                      </button>
+                      <button onClick={() => { setShowInvite(false); setInviteResult(null); }} style={secBtn}>Cancel</button>
+                    </div>
+                    <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 8 }}>
+                      An email will be sent with a signup link and invite code <code style={{ background: "rgba(26,58,46,0.08)", padding: "1px 6px", borderRadius: 4, fontSize: 12 }}>AZURE2026</code>
+                    </div>
+                  </>
+                ) : (
                   <div>
-                    <label style={lbl}>Email address</label>
-                    <input style={inp()} value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} placeholder="colleague@azurecomm.ie" />
+                    {inviteResult.sent ? (
+                      <div style={{ padding: "10px 14px", background: "#f0fdf4", border: "1px solid #86efac", borderRadius: 8, fontSize: 13, color: "#166534", marginBottom: 10 }}>
+                        ✓ Invite email sent to <strong>{inviteResult.email}</strong>
+                      </div>
+                    ) : (
+                      <div style={{ padding: "10px 14px", background: "#fffbeb", border: "1px solid #fcd34d", borderRadius: 8, fontSize: 13, color: "#92400e", marginBottom: 10 }}>
+                        ⚠ Email not sent (Resend not configured). Share this link manually:
+                      </div>
+                    )}
+                    {inviteResult.link && (
+                      <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
+                        <input readOnly value={inviteResult.link} style={{ flex: 1, padding: "8px 10px", borderRadius: 7, border: "1px solid #e5e7eb", fontSize: 11, color: "#374151", background: "#f9fafb", fontFamily: "monospace" }} />
+                        <button onClick={() => { navigator.clipboard.writeText(inviteResult.link); }}
+                          style={{ padding: "8px 14px", borderRadius: 7, border: "none", background: "#1a3a2e", color: "#c8e63c", fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" as const }}>
+                          Copy link
+                        </button>
+                      </div>
+                    )}
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button onClick={() => { setInviteResult(null); setInviteEmail(""); }} style={priBtn}>Invite another</button>
+                      <button onClick={() => { setShowInvite(false); setInviteResult(null); setInviteEmail(""); }} style={secBtn}>Done</button>
+                    </div>
                   </div>
-                  <div>
-                    <label style={lbl}>Role</label>
-                    <select style={inp()} value={inviteRole} onChange={e => setInviteRole(e.target.value)}>
-                      <option value="sales_rep">Sales Rep</option>
-                      <option value="estimator">Estimator</option>
-                      <option value="admin">Admin</option>
-                      <option value="viewer">Viewer</option>
-                    </select>
-                  </div>
-                  <button onClick={() => { if (inviteEmail) { save("Invite sent"); setInviteEmail(""); setShowInvite(false); }}} style={priBtn}>Send invite</button>
-                  <button onClick={() => setShowInvite(false)} style={secBtn}>Cancel</button>
-                </div>
-                <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 8 }}>An email will be sent with a signup link. They will use invite code: <code style={{ background: "rgba(26,58,46,0.08)", padding: "1px 6px", borderRadius: 4, fontSize: 12 }}>AZURE2026</code></div>
+                )}
               </div>
             )}
 
