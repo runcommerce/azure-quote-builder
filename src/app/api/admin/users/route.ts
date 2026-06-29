@@ -82,7 +82,7 @@ export async function PUT(req: NextRequest) {
 
     const session = await getSession();
     // Prevent demoting yourself
-    if (session?.user?.id === id && role && role !== session.user.role)
+    if (session?.user?.id === id && role && role !== (session?.user?.role ?? ""))
       return NextResponse.json({ error: "You cannot change your own role" }, { status: 400 });
 
     if (role && !VALID_ROLES.includes(role))
