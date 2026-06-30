@@ -35,6 +35,23 @@ export async function initDB() {
       created_at TIMESTAMPTZ DEFAULT NOW()
     )
   `;
+  await sql`
+    CREATE TABLE IF NOT EXISTS customers (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      name TEXT NOT NULL,
+      address TEXT,
+      contact_name TEXT,
+      email TEXT,
+      phone TEXT,
+      customer_type TEXT DEFAULT 'Regular',
+      portal TEXT,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_customers_name ON customers (LOWER(name))
+  `.catch(() => {});
 }
 
 // ── USER CRUD ─────────────────────────────────────────────────────────────
@@ -156,4 +173,115 @@ export async function consumeResetToken(token: string, newPassword: string) {
   await sql`UPDATE users SET password_hash = ${hash}, updated_at = NOW() WHERE id = ${row.user_id}`;
   await sql`UPDATE password_reset_tokens SET used = TRUE WHERE token = ${token}`;
   return true;
+}
+
+// ── CUSTOMERS ───────────────────────────────────────────────────────────────
+
+export interface CustomerRecord {
+  id: string;
+  name: string;
+  address: string | null;
+  contact_name: string | null;
+  email: string | null;
+  phone: string | null;
+  customer_type: string;
+  portal: string | null;
+  created_at: string;
+}
+
+export async function getAllCustomers(): Promise<CustomerRecord[]> {
+  const result = await sql`
+    SELECT id, name, address, contact_name, email, phone, customer_type, portal, created_at
+    FROM customers ORDER BY name ASC
+  `;
+  return result.rows as CustomerRecord[];
+}
+
+// Type-ahead search — matches anywhere in name (case-insensitive), name match ranked first
+export async function searchCustomers(query: string, limit = 10): Promise<CustomerRecord[]> {
+  if (!query || query.trim().length === 0) {
+    const result = await sql`
+      SELECT id, name, address, contact_name, email, phone, customer_type, portal, created_at
+      FROM customers ORDER BY name ASC LIMIT ${limit}
+    `;
+    return result.rows as CustomerRecord[];
+  }
+  const q = `%${query.toLowerCase().trim()}%`;
+  const prefixQ = `${query.toLowerCase().trim()}%`;
+  const result = await sql`
+    SELECT id, name, address, contact_name, email, phone, customer_type, portal, created_at
+    FROM customers
+    WHERE LOWER(name) LIKE ${q} OR LOWER(contact_name) LIKE ${q}
+    ORDER BY
+      CASE WHEN LOWER(name) LIKE ${prefixQ} THEN 0 ELSE 1 END,
+      name ASC
+    LIMIT ${limit}
+  `;
+  return result.rows as CustomerRecord[];
+}
+
+export async function getCustomerById(id: string): Promise<CustomerRecord | null> {
+  const result = await sql`
+    SELECT id, name, address, contact_name, email, phone, customer_type, portal, created_at
+    FROM customers WHERE id = ${id} LIMIT 1
+  `;
+  return (result.rows[0] as CustomerRecord) || null;
+}
+
+export async function createCustomer(fields: {
+  name: string; address?: string; contact_name?: string; email?: string;
+  phone?: string; customer_type?: string; portal?: string;
+}): Promise<CustomerRecord> {
+  const result = await sql`
+    INSERT INTO customers (name, address, contact_name, email, phone, customer_type, portal)
+    VALUES (
+      ${fields.name}, ${fields.address ?? null}, ${fields.contact_name ?? null},
+      ${fields.email ?? null}, ${fields.phone ?? null},
+      ${fields.customer_type ?? "Regular"}, ${fields.portal ?? null}
+    )
+    RETURNING id, name, address, contact_name, email, phone, customer_type, portal, created_at
+  `;
+  return result.rows[0] as CustomerRecord;
+}
+
+export async function updateCustomer(
+  id: string,
+  fields: Partial<{ name: string; address: string; contact_name: string; email: string; phone: string; customer_type: string; portal: string }>
+): Promise<CustomerRecord | null> {
+  const { name, address, contact_name, email, phone, customer_type, portal } = fields;
+  if (name !== undefined) await sql`UPDATE customers SET name = ${name}, updated_at = NOW() WHERE id = ${id}`;
+  if (address !== undefined) await sql`UPDATE customers SET address = ${address}, updated_at = NOW() WHERE id = ${id}`;
+  if (contact_name !== undefined) await sql`UPDATE customers SET contact_name = ${contact_name}, updated_at = NOW() WHERE id = ${id}`;
+  if (email !== undefined) await sql`UPDATE customers SET email = ${email}, updated_at = NOW() WHERE id = ${id}`;
+  if (phone !== undefined) await sql`UPDATE customers SET phone = ${phone}, updated_at = NOW() WHERE id = ${id}`;
+  if (customer_type !== undefined) await sql`UPDATE customers SET customer_type = ${customer_type}, updated_at = NOW() WHERE id = ${id}`;
+  if (portal !== undefined) await sql`UPDATE customers SET portal = ${portal}, updated_at = NOW() WHERE id = ${id}`;
+  return getCustomerById(id);
+}
+
+export async function deleteCustomer(id: string): Promise<void> {
+  await sql`DELETE FROM customers WHERE id = ${id}`;
+}
+
+export async function customerCount(): Promise<number> {
+  const result = await sql`SELECT COUNT(*) as count FROM customers`;
+  return Number(result.rows[0]?.count ?? 0);
+}
+
+// Bulk insert for seeding — skips duplicates by name (case-insensitive)
+export async function bulkInsertCustomers(
+  rows: Array<{ name: string; address?: string; contact_name?: string }>
+): Promise<{ inserted: number; skipped: number }> {
+  let inserted = 0, skipped = 0;
+  for (const row of rows) {
+    if (!row.name?.trim()) { skipped++; continue; }
+    const existing = await sql`SELECT id FROM customers WHERE LOWER(name) = ${row.name.toLowerCase().trim()} LIMIT 1`;
+    if (existing.rows.length > 0) { skipped++; continue; }
+    await sql`
+      INSERT INTO customers (name, address, contact_name, customer_type)
+      VALUES (${row.name.trim()}, ${row.address?.trim() || null}, ${row.contact_name?.trim() || null}, 'Regular')
+    `;
+    inserted++;
+  }
+  return { inserted, skipped };
 }
