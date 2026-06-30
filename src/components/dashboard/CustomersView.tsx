@@ -20,9 +20,9 @@ const ink = "#111827"; const muted = "#6B7280";
 const inp: React.CSSProperties = { width: "100%", padding: "9px 12px", borderRadius: 8, border: `1px solid ${line}`, fontSize: 14, boxSizing: "border-box" as const, fontFamily: "inherit" };
 const lbl: React.CSSProperties = { fontSize: 11, fontWeight: 600, color: muted, textTransform: "uppercase" as const, letterSpacing: "0.05em", display: "block", marginBottom: 4 };
 
-interface Props { setView: (v: View) => void; }
+interface Props { setView: (v: View) => void; onCreateOrder: (customerName: string) => void; }
 
-export default function CustomersView({ setView }: Props) {
+export default function CustomersView({ setView, onCreateOrder }: Props) {
   const [query, setQuery]           = useState("");
   const [results, setResults]       = useState<Customer[]>([]);
   const [allCount, setAllCount]     = useState<number | null>(null);
@@ -221,16 +221,22 @@ export default function CustomersView({ setView }: Props) {
               </div>
             ) : (
               results.map(c => (
-                <div key={c.id} onMouseDown={() => { setSelected(c); setQuery(""); setShowDropdown(false); }}
-                  style={{ padding: "10px 16px", borderBottom: `1px solid ${line}`, cursor: "pointer" }}
+                <div key={c.id}
+                  style={{ padding: "10px 16px", borderBottom: `1px solid ${line}`, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}
                   onMouseEnter={e => (e.currentTarget.style.background = "#F9FAFB")}
                   onMouseLeave={e => (e.currentTarget.style.background = "#fff")}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: ink }}>{c.name}</div>
-                  {(c.contact_name || c.address) && (
-                    <div style={{ fontSize: 12, color: muted, marginTop: 2 }}>
-                      {c.contact_name ? `Contact: ${c.contact_name}` : ""}{c.contact_name && c.address ? " · " : ""}{c.address ?? ""}
-                    </div>
-                  )}
+                  <div onMouseDown={() => { setSelected(c); setQuery(""); setShowDropdown(false); }} style={{ cursor: "pointer", flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: ink }}>{c.name}</div>
+                    {(c.contact_name || c.address) && (
+                      <div style={{ fontSize: 12, color: muted, marginTop: 2, overflow: "hidden" as const, textOverflow: "ellipsis" as const, whiteSpace: "nowrap" as const }}>
+                        {c.contact_name ? `Contact: ${c.contact_name}` : ""}{c.contact_name && c.address ? " · " : ""}{c.address ?? ""}
+                      </div>
+                    )}
+                  </div>
+                  <button onMouseDown={e => { e.preventDefault(); onCreateOrder(c.name); setQuery(""); setShowDropdown(false); }}
+                    style={{ padding: "5px 11px", borderRadius: 6, border: "none", background: forest, color: lime, fontSize: 11.5, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" as const, flexShrink: 0 }}>
+                    + Order
+                  </button>
                 </div>
               ))
             )}
@@ -285,7 +291,7 @@ export default function CustomersView({ setView }: Props) {
               </>
             ) : (
               <>
-                <button onClick={() => setView("upload-quote")} style={{ padding: "9px 18px", borderRadius: 8, border: "none", background: forest, color: lime, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>New quote for this customer</button>
+                <button onClick={() => onCreateOrder(selected.name)} style={{ padding: "9px 18px", borderRadius: 8, border: "none", background: forest, color: lime, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Create order for this customer →</button>
                 <button onClick={() => { setEditing(true); setEditForm({}); }} style={{ padding: "9px 16px", borderRadius: 8, border: `1px solid ${line}`, background: "#fff", color: ink, fontSize: 13, cursor: "pointer" }}>✏️ Edit</button>
                 <button onClick={() => handleDelete(selected.id, selected.name)} style={{ padding: "9px 16px", borderRadius: 8, border: "1px solid #fca5a5", background: "#fff", color: "#dc2626", fontSize: 13, cursor: "pointer" }}>🗑 Delete</button>
               </>
@@ -306,15 +312,29 @@ export default function CustomersView({ setView }: Props) {
             </div>
           )}
           {results.map((c, i) => (
-            <div key={c.id} onClick={() => setSelected(c)}
-              style={{ padding: "11px 16px", borderBottom: i < results.length - 1 ? `1px solid ${line}` : "none", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}
+            <div key={c.id}
+              style={{ padding: "11px 16px", borderBottom: i < results.length - 1 ? `1px solid ${line}` : "none", display: "flex", justifyContent: "space-between", alignItems: "center" }}
               onMouseEnter={e => (e.currentTarget.style.background = "#F9FAFB")}
               onMouseLeave={e => (e.currentTarget.style.background = "#fff")}>
-              <div>
+              <div onClick={() => setSelected(c)} style={{ cursor: "pointer", flex: 1, minWidth: 0 }}>
                 <span style={{ fontSize: 14, fontWeight: 600, color: ink }}>{c.name}</span>
                 {c.contact_name && <span style={{ fontSize: 12, color: muted, marginLeft: 10 }}>· {c.contact_name}</span>}
+                <span style={{ fontSize: 11, color: muted, marginLeft: 10, padding: "2px 9px", borderRadius: 20, background: "#F3F4F6" }}>{c.customer_type}</span>
               </div>
-              <span style={{ fontSize: 11, color: muted, padding: "2px 9px", borderRadius: 20, background: "#F3F4F6" }}>{c.customer_type}</span>
+              <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                <button onClick={() => onCreateOrder(c.name)}
+                  style={{ padding: "5px 12px", borderRadius: 6, border: "none", background: forest, color: lime, fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" as const }}>
+                  + Create order
+                </button>
+                <button onClick={() => { setSelected(c); setEditing(true); setEditForm({}); }}
+                  style={{ padding: "5px 10px", borderRadius: 6, border: `1px solid ${line}`, background: "#fff", color: ink, fontSize: 12, cursor: "pointer" }}>
+                  ✏️ Edit
+                </button>
+                <button onClick={() => handleDelete(c.id, c.name)}
+                  style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #fca5a5", background: "#fff", color: "#dc2626", fontSize: 12, cursor: "pointer" }}>
+                  🗑 Delete
+                </button>
+              </div>
             </div>
           ))}
         </div>

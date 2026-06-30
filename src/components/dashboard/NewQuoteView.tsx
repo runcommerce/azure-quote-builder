@@ -15,13 +15,13 @@ const PRODUCTS = [
 
 const STEP_LABELS = ["Product", "Specification", "Review & Price"];
 
-interface Props { setView: (v: View) => void; }
+interface Props { setView: (v: View) => void; prefillCustomer?: string | null; }
 
-export default function NewQuoteView({ setView }: Props) {
+export default function NewQuoteView({ setView, prefillCustomer }: Props) {
   const [step, setStep] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
   const [form, setForm] = useState({
-    customer: "", ref: "", quantity: "", finishedSize: "", pages: "",
+    customer: prefillCustomer ?? "", ref: "", quantity: "", finishedSize: "", pages: "",
     substrate: "", weight: "", sides: "", coating: "", delivery: "",
   });
 

@@ -75,6 +75,7 @@ const pill = (primary: boolean): React.CSSProperties => ({
 export default function Dashboard() {
   const [view, setView] = useState<string>("dashboard");
   const [selectedQuoteId, setSelectedQuoteId] = useState<string | null>(null);
+  const [selectedCustomerName, setSelectedCustomerName] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const { data: session } = useSession();
@@ -178,10 +179,10 @@ export default function Dashboard() {
     <>
       {view === "dashboard"      && <HomeView setView={navigate} recentQuotes={[]} />}
       {view === "upload-quote"   && <UploadQuoteView quoteId={selectedQuoteId} onClearQuote={() => setSelectedQuoteId(null)} />}
-      {view === "new-quote"      && <NewQuoteView setView={navigate} />}
+      {view === "new-quote"      && <NewQuoteView setView={navigate} prefillCustomer={selectedCustomerName} />}
       {view === "email-quote"    && <EmailQuoteView />}
       {view === "quotes"         && <QuotesView setView={navigate} onViewQuote={(id) => { setSelectedQuoteId(id); navigate("upload-quote"); }} />}
-      {view === "customers"      && <CustomersView setView={navigate} />}
+      {view === "customers"      && <CustomersView setView={navigate} onCreateOrder={(name) => { setSelectedCustomerName(name); navigate("new-quote"); }} />}
       {view === "client-portals" && <ClientPortalsView />}
       {view === "intelligence"   && <IntelligenceView />}
       {view === "admin-settings" && <AdminSettingsView />}
