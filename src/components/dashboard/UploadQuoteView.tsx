@@ -105,6 +105,10 @@ export default function UploadQuoteView({ quoteId, onClearQuote }: UploadQuoteVi
   const [priceMode, setPriceMode]         = useState<"estimate"|"printlogic"|"manual">("estimate");
   const [showPricing, setShowPricing]     = useState(true);
   const [manualPrice, setManualPrice]     = useState<string>("");
+  // PrintLogic push
+  const [plPushing, setPlPushing]         = useState(false);
+  const [plResult, setPlResult]           = useState<{ quote_id: string; url: string; customer_id: string } | null>(null);
+  const [plError, setPlError]             = useState<string | null>(null);
 
   // Load saved quote when quoteId prop is provided (View spec from Quotes)
   useEffect(() => {
@@ -248,6 +252,76 @@ export default function UploadQuoteView({ quoteId, onClearQuote }: UploadQuoteVi
     setSavedQuoteId(id);
     setDraftSaved(true);
     setTimeout(() => setDraftSaved(false), 2500);
+  };
+
+  // ── Push to PrintLogic ───────────────────────────────────────────────
+  const pushToPrintLogic = async () => {
+    if (!spec) return;
+    setPlPushing(true);
+    setPlError(null);
+    setPlResult(null);
+    try {
+      const delivRule = getDeliveryRule(spec, admin);
+      const breakdown = priceMode === "estimate"
+        ? estimatePrice(spec, delivRule?.courier ?? null, admin.defaultMarkup - 100)
+        : null;
+
+      // Build item from spec
+      const itemDetail = generateItemDetails(spec, admin)?.join("\n") ?? "";
+      const qty = spec.quantity ?? 0;
+      const price = priceMode === "manual" && manualPrice
+        ? Number(manualPrice)
+        : breakdown?.quoted_price ?? 0;
+
+      const quoteData = {
+        description: spec.product_type ?? spec.spec_name ?? "Quote",
+        customerRef: spec.job_reference ?? "",
+        items: [{
+          title: spec.product_type ?? "Print",
+          detail: itemDetail,
+          type: "Print",
+          vat: "23",
+          quantities: qty ? [qty] : [],
+          prices: price ? [Math.round(price * 100) / 100] : [],
+        }],
+      };
+
+      const res = await fetch("/api/printlogic/push", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customerName: spec.customer_name ?? "",
+          quoteData,
+          azureQuoteId: savedQuoteId,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setPlError(data.error ?? "Unknown error from PrintLogic");
+      } else {
+        setPlResult({
+          quote_id: data.printlogic_quote_id,
+          url: data.printlogic_url,
+          customer_id: data.printlogic_customer_id,
+        });
+        // Auto-save the PrintLogic quote ID back to our quote record
+        if (savedQuoteId) {
+          const existing = (await import("@/lib/quotes")).loadQuotes().find(q => q.id === savedQuoteId);
+          if (existing) {
+            (await import("@/lib/quotes")).saveQuote({
+              ...existing,
+              notes: `PrintLogic #${data.printlogic_quote_id}\n${existing.notes}`.trim(),
+              date_updated: new Date().toISOString(),
+            });
+          }
+        }
+      }
+    } catch (err) {
+      setPlError(String(err));
+    } finally {
+      setPlPushing(false);
+    }
   };
 
   // ── Derived ──────────────────────────────────────────────────────────
@@ -904,7 +978,7 @@ export default function UploadQuoteView({ quoteId, onClearQuote }: UploadQuoteVi
 
             {status === "approved" && (
               <div style={{ ...card(), border: `1.5px solid #86efac`, padding: "20px", marginTop: 14 }}>
-                <div style={{ fontWeight: 700, color: T.forest, marginBottom: 12, fontSize: 15 }}>✅ Approved — PrintLogic Checklist</div>
+                <div style={{ fontWeight: 700, color: T.forest, marginBottom: 12, fontSize: 15 }}>✅ Approved — Push to PrintLogic</div>
                 {[
                   `Customer: ${spec.customer_name ?? "[check email]"}`,
                   `Job type: ${spec.product_type ?? "[confirm]"} · Qty: ${spec.quantity ?? "[confirm]"}${(spec.number_of_versions ?? 1) > 1 ? ` (${spec.number_of_versions} versions — ${spec.split_per_version ?? "split TBC"})` : ""}`,
@@ -912,12 +986,43 @@ export default function UploadQuoteView({ quoteId, onClearQuote }: UploadQuoteVi
                   `Stock: ${plMat?.printlogic ?? "[Aaron to select]"}`,
                   `Sides: ${spec.sides_printed ?? "[confirm]"} · ${scoringOn ? "✓ Scoring auto-applied" : "Check finishing"}`,
                   `Delivery: ${delivRule ? `${delivRule.courier} (${delivRule.price})` : "[confirm]"} · Region: ${spec.delivery_region ?? "[confirm]"}`,
-                  `Paste Item Details (right panel) → Calculate → Review margin → Send`,
                 ].map((s, i) => (
-                  <div key={i} style={{ display: "flex", gap: 10, padding: "7px 0", borderBottom: i < 6 ? `1px solid ${T.line}` : "none", fontSize: 13 }}>
+                  <div key={i} style={{ display: "flex", gap: 10, padding: "7px 0", borderBottom: `1px solid ${T.line}`, fontSize: 13 }}>
                     <span style={{ color: T.forest, fontWeight: 700, minWidth: 20 }}>{i + 1}.</span><span>{s}</span>
                   </div>
                 ))}
+
+                {/* Push button */}
+                <div style={{ marginTop: 16 }}>
+                  {!plResult ? (
+                    <button onClick={pushToPrintLogic} disabled={plPushing || !spec.customer_name}
+                      style={{ padding: "12px 24px", borderRadius: 9, border: "none", background: plPushing ? T.line : "#1a3a2e", color: plPushing ? T.muted : T.lime, fontSize: 14, fontWeight: 700, cursor: plPushing || !spec.customer_name ? "not-allowed" : "pointer", opacity: !spec.customer_name ? 0.5 : 1 }}>
+                      {plPushing ? "⏳ Pushing to PrintLogic…" : "🖨 Push quote to PrintLogic"}
+                    </button>
+                  ) : (
+                    <div style={{ background: "#f0fdf4", border: "1px solid #86efac", borderRadius: 9, padding: "14px 16px" }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: T.forest, marginBottom: 8 }}>✅ Quote created in PrintLogic</div>
+                      <div style={{ fontSize: 13, color: T.muted, marginBottom: 10 }}>
+                        Quote <strong style={{ color: T.ink }}>#{plResult.quote_id}</strong> · Customer ID: {plResult.customer_id}
+                      </div>
+                      <a href={plResult.url} target="_blank" rel="noopener noreferrer"
+                        style={{ display: "inline-block", padding: "8px 16px", borderRadius: 7, background: T.forest, color: T.lime, fontSize: 13, fontWeight: 700, textDecoration: "none" }}>
+                        Open in PrintLogic →
+                      </a>
+                      <button onClick={() => setPlResult(null)} style={{ marginLeft: 10, padding: "8px 14px", borderRadius: 7, border: `1px solid ${T.line}`, background: "#fff", fontSize: 13, cursor: "pointer", color: T.muted }}>
+                        Push again
+                      </button>
+                    </div>
+                  )}
+                  {!spec.customer_name && !plResult && (
+                    <div style={{ fontSize: 12, color: T.amber, marginTop: 6 }}>⚠ Customer name required before pushing to PrintLogic</div>
+                  )}
+                  {plError && (
+                    <div style={{ marginTop: 10, padding: "10px 14px", background: T.redBg, border: "1px solid #fca5a5", borderRadius: 8, fontSize: 13, color: T.red }}>
+                      ✗ {plError}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
