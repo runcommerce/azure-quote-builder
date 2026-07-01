@@ -267,7 +267,7 @@ export default function UploadQuoteView({ quoteId, onClearQuote }: UploadQuoteVi
         : null;
 
       // Build item from spec
-      const itemDetail = generateItemDetails(spec, admin)?.join("\n") ?? "";
+      const itemDetail = generateItemDetails(spec)?.join("\n") ?? "";
       const qty = spec.quantity ?? 0;
       const price = priceMode === "manual" && manualPrice
         ? Number(manualPrice)
