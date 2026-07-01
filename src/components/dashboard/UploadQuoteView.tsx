@@ -531,11 +531,25 @@ export default function UploadQuoteView({ quoteId, onClearQuote }: UploadQuoteVi
               </div>
             )}
 
-            {/* Confidence flags */}
-            {flags.length > 0 && (
+            {/* Confidence flags + missing field summary */}
+            {(flags.length > 0 || missingNow.length > 0) && (
               <div style={{ background: T.amberBg, border: `1px solid #fcd34d`, borderRadius: 8, padding: "12px 16px", marginBottom: 14 }}>
                 <div style={{ fontWeight: 700, fontSize: 13, color: T.amber, marginBottom: 6 }}>⚠ Review before approving</div>
                 {flags.map((f, i) => <div key={i} style={{ fontSize: 12, color: T.amber, paddingLeft: 10 }}>· {f}</div>)}
+                {missingNow.length > 0 && (
+                  <div style={{ marginTop: flags.length > 0 ? 8 : 0, paddingTop: flags.length > 0 ? 8 : 0, borderTop: flags.length > 0 ? "1px solid #fcd34d" : "none" }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: T.red, marginBottom: 6 }}>
+                      🔴 {missingNow.length} required field{missingNow.length > 1 ? "s" : ""} missing — shown with red borders in the form below:
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 6 }}>
+                      {missingNow.map(f => (
+                        <span key={f.key} style={{ fontSize: 12, padding: "3px 10px", borderRadius: 20, background: T.redBg, color: T.red, border: "1px solid #fca5a5", fontWeight: 600 }}>
+                          {f.label}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -557,13 +571,13 @@ export default function UploadQuoteView({ quoteId, onClearQuote }: UploadQuoteVi
             <div style={card()}>
               <div style={sHdr()}><span style={sLbl}>1 — Job Header</span></div>
               <div style={fWrap}>
-                <F k="job_reference"  label="Quote / Job reference" ph="e.g. 741086" />
-                <F k="customer_name"  label="Client name"           ph="Customer name" />
-                <F k="created_by"     label="Created by"            ph="e.g. Bryan Nicholas CPT" />
-                <F k="created_date"   label="Created on"            ph="22 May 2026" />
-                <F k="unit_of_measure" label="Unit of measure"      opts={["Each","Sets","Sheets"]} />
-                <F k="life_expectancy" label="Life expectancy"       opts={["Temporary","Permanent"]} />
-                <F k="description"    label="Description / notes"   ph="Key details from spec" wide />
+                {F({ k: "job_reference", label: "Quote / Job reference", ph: "e.g. 741086" })}
+                {F({ k: "customer_name", label: "Client name", ph: "Customer name" })}
+                {F({ k: "created_by", label: "Created by", ph: "e.g. Bryan Nicholas CPT" })}
+                {F({ k: "created_date", label: "Created on", ph: "22 May 2026" })}
+                {F({ k: "unit_of_measure", label: "Unit of measure", opts: ["Each","Sets","Sheets"] })}
+                {F({ k: "life_expectancy", label: "Life expectancy", opts: ["Temporary","Permanent"] })}
+                {F({ k: "description", label: "Description / notes", ph: "Key details from spec" })}
               </div>
             </div>
 
@@ -571,15 +585,15 @@ export default function UploadQuoteView({ quoteId, onClearQuote }: UploadQuoteVi
             <div style={card()}>
               <div style={sHdr()}><span style={sLbl}>2 — Product Classification</span></div>
               <div style={fWrap}>
-                <F k="category_of_work" label="Category of work" opts={["Print","Freight","Custom Goods & Services"]} />
+                {F({ k: "category_of_work", label: "Category of work", opts: ["Print","Freight","Custom Goods & Services"] })}
                 {!isNonPrint && <>
-                  <F k="product_type" label="Product type (PrintLogic)" opts={["Leaflets","Brochure Body","Brochure Cover","Business Cards","Cards / Postcards","Large Format Posters","Mailing","Booklets","Letterheads","Comp Slips","Pads","Self Mailer","4 Page Leaflet","Menu","No Print"]} />
+                  {F({ k: "product_type", label: "Product type (PrintLogic)", opts: ["Leaflets","Brochure Body","Brochure Cover","Business Cards","Cards / Postcards","Large Format Posters","Mailing","Booklets","Letterheads","Comp Slips","Pads","Self Mailer","4 Page Leaflet","Menu","No Print"] })}
                   {spec.mtivity_product_type && !spec.product_type && (
                     <div style={{ gridColumn: "1/-1", padding: "8px 12px", background: T.amberBg, borderRadius: 7, fontSize: 12, color: T.amberTx }}>
                       ⚠ &quot;{spec.mtivity_product_type}&quot; has no PrintLogic mapping — select above
                     </div>
                   )}
-                  <F k="finished_product_style" label="Finished style" opts={["Flat","Folded","Bound"]} />
+                  {F({ k: "finished_product_style", label: "Finished style", opts: ["Flat","Folded","Bound"] })}
                 </>}
               </div>
             </div>
@@ -589,31 +603,31 @@ export default function UploadQuoteView({ quoteId, onClearQuote }: UploadQuoteVi
               <div style={card()}>
                 <div style={sHdr()}><span style={sLbl}>3 — Dimensions</span></div>
                 <div style={fWrap}>
-                  <NumField k="flat_size_length"     label="Flat length (mm)"     ph="e.g. 297" />
-                  <NumField k="flat_size_width"      label="Flat width (mm)"       ph="e.g. 420" />
+                  {NumField({ k: "flat_size_length", label: "Flat length (mm)", ph: "e.g. 297" })}
+                  {NumField({ k: "flat_size_width", label: "Flat width (mm)", ph: "e.g. 420" })}
                   {(spec.finished_product_style === "Folded" || spec.finished_product_style === "Bound") && <>
-                    <NumField k="finished_size_length" label="Finished length (mm)" ph="e.g. 297" />
-                    <NumField k="finished_size_width"  label="Finished width (mm)"  ph="e.g. 210" />
+                    {NumField({ k: "finished_size_length", label: "Finished length (mm)", ph: "e.g. 297" })}
+                    {NumField({ k: "finished_size_width", label: "Finished width (mm)", ph: "e.g. 210" })}
                   </>}
-                  <NumField k="pages" label="Total page count" ph="e.g. 4" />
+                  {NumField({ k: "pages", label: "Total page count", ph: "e.g. 4" })}
                 </div>
               </div>
             )}
 
             {/* ─── SECTIONS 4+5: SUBSTRATE & INK ─── */}
-            {!isNonPrint && <SubstratesSection />}
+            {!isNonPrint && {SubstratesSection()}}
 
             {/* ─── SECTION 5 CONTINUED: INK & ARTWORK top-level fields ─── */}
             {!isNonPrint && (
               <div style={card()}>
                 <div style={sHdr()}><span style={sLbl}>5 — Ink & Artwork</span></div>
                 <div style={fWrap}>
-                  <F k="sides_printed"    label="Number of sides printed" opts={["1","2"]} />
-                  <F k="ink_spec"         label="Ink spec"                opts={["Same both sides","Different each side"]} />
-                  <F k="artwork_variation" label="Art"                    opts={["Same Art","Different Art"]} />
-                  <F k="artwork_status"   label="Artwork status"          opts={["New","Repeat","Customer Supplied"]} />
-                  <Bool k="lighting_required"   label="Lighting required" />
-                  <Bool k="electronics_required" label="Electronics required" />
+                  {F({ k: "sides_printed", label: "Number of sides printed", opts: ["1","2"] })}
+                  {F({ k: "ink_spec", label: "Ink spec", opts: ["Same both sides","Different each side"] })}
+                  {F({ k: "artwork_variation", label: "Art", opts: ["Same Art","Different Art"] })}
+                  {F({ k: "artwork_status", label: "Artwork status", opts: ["New","Repeat","Customer Supplied"] })}
+                  {Bool({ k: "lighting_required", label: "Lighting required" })}
+                  {Bool({ k: "electronics_required", label: "Electronics required" })}
                 </div>
               </div>
             )}
@@ -623,7 +637,7 @@ export default function UploadQuoteView({ quoteId, onClearQuote }: UploadQuoteVi
               <div style={card()}>
                 <div style={sHdr()}><span style={sLbl}>6 — Coatings & Finishing</span></div>
                 <div style={fWrap}>
-                  <Bool k="finishing_required" label="Additional finishing required" />
+                  {Bool({ k: "finishing_required", label: "Additional finishing required" })}
                 </div>
                 {spec.finishing_required && (
                   <div style={{ padding: "0 18px 14px" }}>
@@ -653,12 +667,12 @@ export default function UploadQuoteView({ quoteId, onClearQuote }: UploadQuoteVi
               <div style={card()}>
                 <div style={sHdr()}><span style={sLbl}>7 — Folding & Binding</span></div>
                 <div style={fWrap}>
-                  <Bool k="trim_to_size"   label="Trim to size" />
-                  <F k="folded_or_bound"   label="Folded or bound" opts={["No","Folded","Bound"]} />
-                  {spec.folded_or_bound === "Folded" && <F k="fold_type" label="Fold type" opts={["Single Fold","Z-Fold","Roll Fold","Gatefold","Concertina","French Fold","4pp","6pp","8pp","Complex Fold"]} />}
+                  {Bool({ k: "trim_to_size", label: "Trim to size" })}
+                  {F({ k: "folded_or_bound", label: "Folded or bound", opts: ["No","Folded","Bound"] })}
+                  {spec.folded_or_bound === "Folded" && {F({ k: "fold_type", label: "Fold type", opts: ["Single Fold","Z-Fold","Roll Fold","Gatefold","Concertina","French Fold","4pp","6pp","8pp","Complex Fold"] })}}
                   {spec.folded_or_bound === "Bound"  && <>
-                    <F k="binding_type"     label="Binding type" opts={["Saddle Stitch","Perfect Bound","Loop Stitch","Spiral Bound","Wiro Bound"]} />
-                    <F k="binding_comments" label="Binding comments" ph="e.g. min 8 pages" />
+                    {F({ k: "binding_type", label: "Binding type", opts: ["Saddle Stitch","Perfect Bound","Loop Stitch","Spiral Bound","Wiro Bound"] })}
+                    {F({ k: "binding_comments", label: "Binding comments", ph: "e.g. min 8 pages" })}
                   </>}
                 </div>
               </div>
@@ -668,8 +682,8 @@ export default function UploadQuoteView({ quoteId, onClearQuote }: UploadQuoteVi
             <div style={card()}>
               <div style={sHdr()}><span style={sLbl}>8 — Proofing</span></div>
               <div style={fWrap}>
-                <Bool k="proof_required" label="Proof required" />
-                {spec.proof_required && <F k="proof_type" label="Proof type" opts={["PDF:Colour","PDF","Hard Copy","Digital"]} />}
+                {Bool({ k: "proof_required", label: "Proof required" })}
+                {spec.proof_required && {F({ k: "proof_type", label: "Proof type", opts: ["PDF:Colour","PDF","Hard Copy","Digital"] })}}
               </div>
             </div>
 
@@ -677,21 +691,21 @@ export default function UploadQuoteView({ quoteId, onClearQuote }: UploadQuoteVi
             <div style={card()}>
               <div style={sHdr()}><span style={sLbl}>9 — Packaging</span></div>
               <div style={fWrap}>
-                <Bool k="bundling_required" label="Bundling required" />
+                {Bool({ k: "bundling_required", label: "Bundling required" })}
                 {spec.bundling_required && <>
-                  <F k="bundling_type" label="Bundle type" opts={["Shrink Wrap","Banded","Boxed","Palletised"]} />
-                  <NumField k="bundle_quantity" label="Bundle quantity" ph="e.g. 25" />
+                  {F({ k: "bundling_type", label: "Bundle type", opts: ["Shrink Wrap","Banded","Boxed","Palletised"] })}
+                  {NumField({ k: "bundle_quantity", label: "Bundle quantity", ph: "e.g. 25" })}
                 </>}
-                <Bool k="inner_packaging_required" label="Inner packaging required" />
-                {spec.inner_packaging_required && <F k="inner_packaging_material" label="Inner material" opts={["Packaging Cardboard","Bubble Wrap","Foam","Tissue Paper"]} />}
-                <Bool k="outer_packaging_required" label="Outer packaging required" />
+                {Bool({ k: "inner_packaging_required", label: "Inner packaging required" })}
+                {spec.inner_packaging_required && {F({ k: "inner_packaging_material", label: "Inner material", opts: ["Packaging Cardboard","Bubble Wrap","Foam","Tissue Paper"] })}}
+                {Bool({ k: "outer_packaging_required", label: "Outer packaging required" })}
                 {spec.outer_packaging_required && <>
-                  <F k="outer_packaging_material" label="Outer material" opts={["Packaging Cardboard","Pallet","Box","Shrink Wrap"]} />
-                  <Bool k="max_outer_packaging_size_required" label="Specify max outer size?" />
+                  {F({ k: "outer_packaging_material", label: "Outer material", opts: ["Packaging Cardboard","Pallet","Box","Shrink Wrap"] })}
+                  {Bool({ k: "max_outer_packaging_size_required", label: "Specify max outer size?" })}
                   {spec.max_outer_packaging_size_required && <>
-                    <NumField k="max_outer_packaging_length" label="Max length (mm)" />
-                    <NumField k="max_outer_packaging_width"  label="Max width (mm)" />
-                    <NumField k="max_outer_packaging_height" label="Max height (mm)" />
+                    {NumField({ k: "max_outer_packaging_length", label: "Max length (mm)" })}
+                    {NumField({ k: "max_outer_packaging_width", label: "Max width (mm)" })}
+                    {NumField({ k: "max_outer_packaging_height", label: "Max height (mm)" })}
                   </>}
                 </>}
               </div>
@@ -701,9 +715,9 @@ export default function UploadQuoteView({ quoteId, onClearQuote }: UploadQuoteVi
             <div style={card()}>
               <div style={sHdr()}><span style={sLbl}>10 — Delivery & Logistics</span></div>
               <div style={fWrap}>
-                <NumField k="delivery_location_count" label="No. of delivery locations" ph="e.g. 1" />
-                <F k="delivery_region" label="Delivery region" opts={["Dublin","ROI","Northern Ireland","UK","International"]} />
-                <F k="delivery_instructions" label="Delivery instructions" ph="e.g. See shipping files" wide />
+                {NumField({ k: "delivery_location_count", label: "No. of delivery locations", ph: "e.g. 1" })}
+                {F({ k: "delivery_region", label: "Delivery region", opts: ["Dublin","ROI","Northern Ireland","UK","International"] })}
+                {F({ k: "delivery_instructions", label: "Delivery instructions", ph: "e.g. See shipping files" })}
               </div>
               {/* DELIVERY LOCATIONS — conditional on delivery_required */}
               <div style={{ padding: "0 18px 8px" }}>
@@ -732,17 +746,17 @@ export default function UploadQuoteView({ quoteId, onClearQuote }: UploadQuoteVi
             <div style={card()}>
               <div style={sHdr()}><span style={sLbl}>11 — Quantity & Versions</span></div>
               <div style={fWrap}>
-                <NumField k="quantity"          label="Total quantity"    ph="e.g. 1100" />
-                <NumField k="number_of_versions" label="Number of versions" ph="e.g. 2" />
-                {(spec.number_of_versions ?? 1) > 1 && <F k="split_per_version" label="Split per version" ph="e.g. 50/50 or 600/500" />}
-                <F k="calculation_method" label="Calculation method" opts={["Quantity","Fixed Price","Rate Card"]} />
+                {NumField({ k: "quantity", label: "Total quantity", ph: "e.g. 1100" })}
+                {NumField({ k: "number_of_versions", label: "Number of versions", ph: "e.g. 2" })}
+                {(spec.number_of_versions ?? 1) > 1 && {F({ k: "split_per_version", label: "Split per version", ph: "e.g. 50/50 or 600/500" })}}
+                {F({ k: "calculation_method", label: "Calculation method", opts: ["Quantity","Fixed Price","Rate Card"] })}
               </div>
             </div>
 
             {/* NOTES */}
             <div style={card()}>
               <div style={sHdr()}><span style={sLbl}>📝 Special Notes</span></div>
-              <div style={fWrap}><F k="special_notes" label="Special notes" ph="Any other quoting-relevant info" wide /></div>
+              <div style={fWrap}>{F({ k: "special_notes", label: "Special notes", ph: "Any other quoting-relevant info" })}</div>
             </div>
 
             {/* ─── PRICING PANEL ─── */}
