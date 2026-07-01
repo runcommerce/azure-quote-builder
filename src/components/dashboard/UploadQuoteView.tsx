@@ -669,7 +669,7 @@ export default function UploadQuoteView({ quoteId, onClearQuote }: UploadQuoteVi
                 <div style={fWrap}>
                   {Bool({ k: "trim_to_size", label: "Trim to size" })}
                   {F({ k: "folded_or_bound", label: "Folded or bound", opts: ["No","Folded","Bound"] })}
-                  {spec.folded_or_bound === "Folded" && {F({ k: "fold_type", label: "Fold type", opts: ["Single Fold","Z-Fold","Roll Fold","Gatefold","Concertina","French Fold","4pp","6pp","8pp","Complex Fold"] })}}
+                  {spec.folded_or_bound === "Folded" && F({ k: "fold_type", label: "Fold type", opts: ["Single Fold","Z-Fold","Roll Fold","Gatefold","Concertina","French Fold","4pp","6pp","8pp","Complex Fold"] })}
                   {spec.folded_or_bound === "Bound"  && <>
                     {F({ k: "binding_type", label: "Binding type", opts: ["Saddle Stitch","Perfect Bound","Loop Stitch","Spiral Bound","Wiro Bound"] })}
                     {F({ k: "binding_comments", label: "Binding comments", ph: "e.g. min 8 pages" })}
@@ -683,7 +683,7 @@ export default function UploadQuoteView({ quoteId, onClearQuote }: UploadQuoteVi
               <div style={sHdr()}><span style={sLbl}>8 — Proofing</span></div>
               <div style={fWrap}>
                 {Bool({ k: "proof_required", label: "Proof required" })}
-                {spec.proof_required && {F({ k: "proof_type", label: "Proof type", opts: ["PDF:Colour","PDF","Hard Copy","Digital"] })}}
+                {spec.proof_required && F({ k: "proof_type", label: "Proof type", opts: ["PDF:Colour","PDF","Hard Copy","Digital"] })}
               </div>
             </div>
 
@@ -697,7 +697,7 @@ export default function UploadQuoteView({ quoteId, onClearQuote }: UploadQuoteVi
                   {NumField({ k: "bundle_quantity", label: "Bundle quantity", ph: "e.g. 25" })}
                 </>}
                 {Bool({ k: "inner_packaging_required", label: "Inner packaging required" })}
-                {spec.inner_packaging_required && {F({ k: "inner_packaging_material", label: "Inner material", opts: ["Packaging Cardboard","Bubble Wrap","Foam","Tissue Paper"] })}}
+                {spec.inner_packaging_required && F({ k: "inner_packaging_material", label: "Inner material", opts: ["Packaging Cardboard","Bubble Wrap","Foam","Tissue Paper"] })}
                 {Bool({ k: "outer_packaging_required", label: "Outer packaging required" })}
                 {spec.outer_packaging_required && <>
                   {F({ k: "outer_packaging_material", label: "Outer material", opts: ["Packaging Cardboard","Pallet","Box","Shrink Wrap"] })}
@@ -748,7 +748,7 @@ export default function UploadQuoteView({ quoteId, onClearQuote }: UploadQuoteVi
               <div style={fWrap}>
                 {NumField({ k: "quantity", label: "Total quantity", ph: "e.g. 1100" })}
                 {NumField({ k: "number_of_versions", label: "Number of versions", ph: "e.g. 2" })}
-                {(spec.number_of_versions ?? 1) > 1 && {F({ k: "split_per_version", label: "Split per version", ph: "e.g. 50/50 or 600/500" })}}
+                {(spec.number_of_versions ?? 1) > 1 && F({ k: "split_per_version", label: "Split per version", ph: "e.g. 50/50 or 600/500" })}
                 {F({ k: "calculation_method", label: "Calculation method", opts: ["Quantity","Fixed Price","Rate Card"] })}
               </div>
             </div>
