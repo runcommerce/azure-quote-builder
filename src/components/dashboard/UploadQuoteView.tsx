@@ -615,7 +615,7 @@ export default function UploadQuoteView({ quoteId, onClearQuote }: UploadQuoteVi
             )}
 
             {/* ─── SECTIONS 4+5: SUBSTRATE & INK ─── */}
-            {!isNonPrint && {SubstratesSection()}}
+            {!isNonPrint && SubstratesSection()}
 
             {/* ─── SECTION 5 CONTINUED: INK & ARTWORK top-level fields ─── */}
             {!isNonPrint && (
