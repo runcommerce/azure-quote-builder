@@ -183,7 +183,9 @@ function mergeCookies(existing: string, newCookies: string): string {
     const [k, ...v] = part.split("=");
     current.set(k, v.join("="));
   });
-  return [...current.entries()].map(([k, v]) => `${k}=${v}`).join("; ");
+  const result: string[] = [];
+  current.forEach((v, k) => result.push(`${k}=${v}`));
+  return result.join("; ");
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
